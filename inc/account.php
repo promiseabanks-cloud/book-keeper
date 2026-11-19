@@ -120,6 +120,7 @@ add_action(
 		};
 		register_rest_route( 'bookkeeper/v1', '/account', array( 'methods' => 'POST', 'permission_callback' => $auth, 'callback' => 'bk_rest_account' ) );
 		register_rest_route( 'bookkeeper/v1', '/account/password', array( 'methods' => 'POST', 'permission_callback' => $auth, 'callback' => 'bk_rest_password' ) );
+		register_rest_route( 'bookkeeper/v1', '/account/logout', array( 'methods' => 'POST', 'permission_callback' => $auth, 'callback' => 'bk_rest_logout' ) );
 		register_rest_route( 'bookkeeper/v1', '/account/delete', array( 'methods' => 'POST', 'permission_callback' => $auth, 'callback' => 'bk_rest_account_delete' ) );
 	}
 );
@@ -169,3 +170,51 @@ function bk_rest_account_delete( WP_REST_Request $req ) {
 	wp_delete_user( $user->ID );
 	return array( 'deleted' => true, 'home' => home_url( '/' ) );
 }
+
+/* ---------- sign out ---------- */
+
+function bk_rest_logout() {
+	wp_logout();
+	return array( 'out' => true );
+}
+
+/*
+ * WordPress asks "Do you really want to log out?" on a plain grey page when a
+ * sign-out link's nonce has gone stale. Readers get a branded page instead.
+ */
+add_action(
+	'login_form_logout',
+	function () {
+		$to = isset( $_REQUEST['redirect_to'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_REQUEST['redirect_to'] ) ), home_url( '/' ) ) : home_url( '/' ); // phpcs:ignore
+		if ( isset( $_REQUEST['_wpnonce'] ) && wp_verify_nonce( sanitize_key( $_REQUEST['_wpnonce'] ), 'log-out' ) ) {
+			return; // A good link: WordPress signs out and redirects as usual.
+		}
+		if ( ! is_user_logged_in() ) {
+			wp_safe_redirect( $to );
+			exit;
+		}
+		$b    = bk_brand();
+		$logo = $b['logo'] ? '<img src="' . esc_url( $b['logo'] ) . '" alt="" width="44" height="44">' : '';
+		$body = '<main class="bk-out"><div class="bk-out-card">'
+			. '<a class="bk-out-brand" href="' . esc_url( $b['home'] ) . '">' . $logo . '</a>'
+			. '<h1>Sign out?</h1>'
+			. '<p>You are signed in as ' . esc_html( wp_get_current_user()->user_email ) . '. Your highlights, notes and progress stay saved for next time.</p>'
+			. '<div class="bk-out-actions"><a class="bk-btn bk-btn--solid" href="' . esc_url( wp_logout_url( $to ) ) . '">Sign out</a>'
+			. '<a class="bk-btn" href="' . esc_url( $to ) . '">Stay signed in</a></div>'
+			. '</div></main>';
+		nocache_headers();
+		bk_page( 'Sign out', $body );
+		exit;
+	},
+	1
+);
+
+/* After signing out with no destination, go home rather than to wp-login.php. */
+add_filter(
+	'logout_redirect',
+	function ( $to, $requested ) {
+		return $requested ? $to : home_url( '/' );
+	},
+	10,
+	2
+);

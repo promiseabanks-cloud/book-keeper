@@ -35,6 +35,9 @@
 	function icon( name ) {
 		var p = {
 			menu: 'M4 7h16M4 12h16M4 17h10',
+			home: 'M4 11l8-7 8 7M6 9.5V20h4.5v-5.5h3V20H18V9.5',
+			out: 'M14 4h5v16h-5M10 8l-4 4 4 4M6 12h11',
+			ext: 'M14 4h6v6M20 4l-9 9M18 14v6H4V6h6',
 			close: 'M6 6l12 12M18 6L6 18',
 			left: 'M15 6l-6 6 6 6',
 			right: 'M9 6l6 6-6 6',
@@ -191,7 +194,8 @@
 	function shell() {
 		app.innerHTML = '';
 		ui.bar = h( 'header', { class: 'bk-bar' }, [
-			h( 'button', { class: 'bk-iconbtn', type: 'button', 'aria-label': 'Contents', onclick: function () { openDrawer( 'toc' ); } }, [ icon( 'menu' ) ] ),
+			h( 'button', { class: 'bk-iconbtn', type: 'button', 'aria-label': 'Contents', title: 'Contents', onclick: function () { openDrawer( 'toc' ); } }, [ icon( 'menu' ) ] ),
+			h( 'a', { class: 'bk-iconbtn bk-homebtn', href: '#/', 'aria-label': 'Your dashboard', title: 'Your dashboard' }, [ icon( 'home' ) ] ),
 			h( 'a', { class: 'bk-bar-title', href: '#/' }, [
 				C.logo ? h( 'img', { src: C.logo, alt: '', width: 28, height: 28 } ) : null,
 				h( 'span', { class: 'bk-bar-book', text: C.title } )
@@ -314,7 +318,7 @@
 		if ( ! S.book.owns ) {
 			ui.toc.appendChild( h( 'a', { class: 'bk-btn bk-btn--solid bk-btn--block', href: '#/buy', onclick: closeDrawer, text: 'Unlock the full book' } ) );
 		}
-		ui.toc.appendChild( h( 'a', { class: 'bk-drawer-foot', href: C.logout, text: 'Sign out' } ) );
+		ui.toc.appendChild( h( 'div', { class: 'bk-drawer-foot' }, [ signOutBtn() ] ) );
 	}
 
 	/* ---------- my notes: highlights, journal, actions, progress ---------- */
@@ -560,7 +564,17 @@
 			] );
 			body.appendChild( del );
 		}
-		body.appendChild( h( 'a', { class: 'bk-link bk-link--soft', href: C.logout, text: 'Sign out' } ) );
+		body.appendChild( h( 'div', { class: 'bk-acc-out' }, [ signOutBtn() ] ) );
+	}
+	/* sign out without WordPress's confirmation page, then land on the sign-in screen */
+	function signOutBtn() {
+		var b = h( 'button', { class: 'bk-btn bk-btn--out', type: 'button' }, [ icon( 'out' ), 'Sign out' ] );
+		b.addEventListener( 'click', function () {
+			b.disabled = true;
+			flush();
+			api( 'POST', 'account/logout', {} ).then( function () { location.href = location.pathname + '?bk_err=out'; } ).catch( function () { location.href = C.logout; } );
+		} );
+		return b;
 	}
 	function stat( n, l ) { return h( 'div', { class: 'bk-stat' }, [ h( 'span', { text: l.charAt( 0 ).toUpperCase() + l.slice( 1 ) } ), h( 'strong', { text: String( n ) } ) ] ); }
 	function empty( t, s ) { return h( 'div', { class: 'bk-empty' }, [ h( 'p', { class: 'bk-empty-t', text: t } ), h( 'p', { text: s } ) ] ); }
@@ -588,6 +602,7 @@
 
 		var wrap = h( 'section', { class: 'bk-home' } );
 		wrap.appendChild( h( 'header', { class: 'bk-dash-head', 'data-rise': '' }, [
+			h( 'a', { class: 'bk-btn bk-dash-site', href: C.home }, [ 'Visit the website', icon( 'ext' ) ] ),
 			h( 'h1', { class: 'bk-dash-hi', text: ( first ? 'Welcome, ' : greet() + ', ' ) + name + '.' } ),
 			h( 'p', { class: 'bk-dash-sub', text: first ? 'Your copy of ' + C.title + ( C.author ? ' by ' + C.author : '' ) + ' is ready. Start whenever you like; each section takes a few minutes.' : 'You are ' + p + '% of the way through ' + C.title + '. Pick up right where you stopped.' } )
 		] ) );

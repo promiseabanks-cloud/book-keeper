@@ -131,6 +131,7 @@ function bk_auth_html( $book ) {
 		'expired' => 'That reset link has expired or was already used. Ask for a new one below.',
 	);
 	$notes  = array(
+		'out'  => 'You are signed out. Sign in again whenever you want to keep reading.',
 		'sent' => 'If that email has an account, a reset link is on its way. It can take a minute, so check your spam folder too.',
 	);
 	$action = esc_url( admin_url( 'admin-post.php' ) );

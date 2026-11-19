@@ -711,3 +711,58 @@ html[data-font="serif"] { --bk-read-font: "Iowan Old Style", "Palatino Linotype"
 	.bk-cal { gap: 5px; }
 	.bk-cal-b, .bk-body .bk-cal-b { padding: 0 8px; font-size: 12px; }
 }
+
+/* ---------- v0.7.1: roomier layout, home button, sign out ---------- */
+.bk-bar { padding: 0 max(24px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)); gap: 6px; }
+.bk-bar-title { margin-left: 8px; }
+.bk-main { padding: 0 48px 140px; }
+.bk-section { padding-top: clamp(48px, 9vh, 96px); }
+.bk-sec-head { margin-bottom: 44px; padding-bottom: 30px; }
+.bk-sec-title { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.12; letter-spacing: -.022em; }
+.bk-block { padding: 30px 30px 26px; }
+.bk-home { padding-bottom: 40px; }
+
+.bk-drawer { padding: 28px 32px calc(28px + env(safe-area-inset-bottom)); }
+.bk-drawer-head { padding: 0 0 22px; }
+.bk-drawer > .bk-meter { margin-bottom: 38px; }
+.bk-toc-ch { padding: 22px 0; }
+.bk-toc-title { margin-bottom: 12px; }
+.bk-toc-secs { display: grid; gap: 2px; }
+.bk-toc-secs a { padding: 10px 12px; margin: 0 -12px; }
+.bk-drawer-foot { width: 100%; padding-top: 28px; font-size: 15px; }
+
+.bk-btn--out { width: 100%; gap: 10px; color: var(--bk-ink); }
+.bk-btn--out .bk-i { width: 18px; height: 18px; }
+.bk-btn--out:hover { border-color: var(--bk-accent); color: var(--bk-accent); background: var(--bk-tint); }
+.bk-btn--out:disabled { opacity: .6; cursor: wait; }
+.bk-acc-out { margin-top: 8px; }
+
+.bk-dash-head { display: grid; grid-template-columns: 1fr auto; column-gap: 24px; align-items: end; }
+.bk-dash-head .bk-dash-site { grid-column: 2; grid-row: 1 / span 2; align-self: start; min-height: 42px; padding: 0 16px; font-size: 14px; }
+.bk-dash-site .bk-i { width: 16px; height: 16px; }
+.bk-dash-hi, .bk-dash-sub { grid-column: 1; }
+
+/* branded sign-out confirmation */
+.bk-out { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; }
+.bk-out-card { width: min(440px, 100%); padding: 40px 36px 36px; border-radius: 18px; background: var(--bk-card); border: 1px solid var(--bk-line); }
+.bk-out-brand { display: inline-block; margin-bottom: 26px; }
+.bk-out-brand img { width: 44px; height: 44px; object-fit: contain; display: block; }
+.bk-out h1 { margin: 0 0 10px; font-size: 30px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; }
+.bk-out p { margin: 0 0 28px; color: var(--bk-soft); font-size: 15.5px; line-height: 1.6; }
+.bk-out-actions { display: grid; gap: 10px; }
+.bk-out-actions .bk-btn { width: 100%; min-height: 50px; }
+
+@media (max-width: 700px) {
+	.bk-bar { padding: 0 max(12px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)); gap: 2px; }
+	.bk-bar-title { margin-left: 2px; }
+	.bk-bar-title img { display: none; }
+	.bk-main { padding: 0 24px 104px; }
+	.bk-section { padding-top: 40px; }
+	.bk-sec-head { margin-bottom: 34px; padding-bottom: 24px; }
+	.bk-sec-title { font-size: 26px; }
+	.bk-block { padding: 24px 20px 20px; }
+	.bk-drawer { padding: 22px 24px calc(24px + env(safe-area-inset-bottom)); }
+	.bk-dash-head { grid-template-columns: 1fr; }
+	.bk-dash-head .bk-dash-site { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 18px; }
+	.bk-out-card { padding: 32px 24px 26px; }
+}
