@@ -14,4 +14,8 @@ A Banks Solution WordPress plugin: a paid, members-only book reader with chapter
 - Reminders: `inc/reminders.php`. One email 24 hours after the last reading session while the book is unfinished; hourly WP cron `bk_reminders`, one-click opt-out.
 - Reading settings: Aa button with moods (paper, white, warm, dark, night), text size and typeface.
 
-Roadmap: Stripe for dollar payments, email summaries, Google Docs sync.
+- Accounts: `inc/account.php`. Branded password reset inside the reader, account settings (name, password, delete account), and the "The book is on sale" switch that shows site buttons linking to `/read/{slug}/#/buy`.
+- Notes: `inc/notes.php`. End-of-chapter summaries, the "email me my notes" recap, and the Markdown/plain export used by Download and Send to Notes.
+- Google Docs: `inc/gdocs.php`. Per-reader OAuth (drive.file scope) and one synced doc per book, refreshed two minutes after each save. Needs a Google OAuth client under Bookkeeper > Settings.
+
+Roadmap: Stripe for dollar payments if Paystack does not enable USD, AI summaries (deferred).

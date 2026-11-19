@@ -64,6 +64,17 @@ function bk_email_html( $a ) {
 		}
 		$h .= '</table>';
 	}
+	foreach ( (array) ( $a['blocks'] ?? array() ) as $blk ) {
+		$h .= '<h2 style="margin:28px 0 4px;font-size:18px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:' . $ink . '">' . esc_html( $blk['title'] ) . '</h2>';
+		$h .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px">';
+		foreach ( $blk['items'] as $it ) {
+			$h .= '<tr><td style="padding:14px 0;border-bottom:1px solid ' . $line . '"><p style="margin:0 0 4px;font-size:13px;color:' . $soft . '">' . esc_html( $it[0] ) . '</p><p style="margin:0;font-size:15px;line-height:1.6;color:#3A2F34">' . nl2br( esc_html( $it[1] ) ) . '</p></td></tr>';
+		}
+		$h .= '</table>';
+	}
+	if ( ! empty( $a['blocks'] ) && ! empty( $a['cta'] ) ) {
+		$h .= '<div style="height:16px"></div>';
+	}
 	if ( ! empty( $a['cta'] ) ) {
 		$h .= '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 4px"><tr><td style="border-radius:10px;background:' . $accent . '">';
 		$h .= '<a href="' . esc_url( $a['cta'][1] ) . '" style="display:inline-block;padding:15px 26px;border-radius:10px;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none">' . esc_html( $a['cta'][0] ) . '</a></td></tr></table>';
@@ -102,6 +113,12 @@ function bk_email_text( $a ) {
 	}
 	if ( ! empty( $a['rows'] ) ) {
 		$t .= "\n";
+	}
+	foreach ( (array) ( $a['blocks'] ?? array() ) as $blk ) {
+		$t .= strtoupper( $blk['title'] ) . "\n\n";
+		foreach ( $blk['items'] as $it ) {
+			$t .= $it[0] . ":\n" . $it[1] . "\n\n";
+		}
 	}
 	if ( ! empty( $a['cta'] ) ) {
 		$t .= $a['cta'][0] . ': ' . $a['cta'][1] . "\n\n";

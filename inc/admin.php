@@ -80,6 +80,8 @@ function bk_settings_page() {
 		}
 		update_option( 'bk_mail', $o, false );
 		bk_pay_settings_save();
+		bk_g_settings_save();
+		update_option( 'bk_on_sale', empty( $_POST['on_sale'] ) ? 0 : 1, false );
 		$msg = 'Settings saved.';
 		if ( ! empty( $_POST['samples'] ) ) {
 			$r   = bk_email_samples();
@@ -109,6 +111,8 @@ function bk_settings_page() {
 				<tr><th scope="row"><label for="bk-fromname">From name</label></th><td><input id="bk-fromname" class="regular-text" name="from_name" value="<?php echo esc_attr( $o['from_name'] ); ?>" placeholder="Vivere"></td></tr>
 			</table>
 			<?php bk_pay_settings_fields(); ?>
+			<table class="form-table" role="presentation"><tr><th scope="row">Launch</th><td><label><input type="checkbox" name="on_sale" value="1" <?php checked( bk_on_sale() ); ?>> The book is on sale</label><p class="description">Shows the "Buy the book" buttons on the site's book page and hides the waitlist button. Leave this off while Paystack is in test mode.</p></td></tr></table>
+			<?php bk_g_settings_fields(); ?>
 			<p class="submit">
 				<button class="button button-primary" type="submit">Save</button>
 				<button class="button" type="submit" name="test" value="1">Save and send me a test email</button>

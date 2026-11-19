@@ -178,10 +178,10 @@
 	applyPrefs( false );
 
 	/* ---------- drawers ---------- */
-	function openDrawer( which ) {
+	function openDrawer( which, tab ) {
 		closeTools();
 		if ( which === 'toc' ) { renderToc(); }
-		else { renderMe( 'marks' ); }
+		else { renderMe( tab || 'marks' ); }
 		app.classList.add( 'is-' + which );
 		app.classList.add( 'is-drawer' );
 		var el = which === 'toc' ? ui.toc : ui.me;
@@ -224,7 +224,7 @@
 	/* ---------- my notes: highlights, journal, actions, progress ---------- */
 	function renderMe( tab ) {
 		ui.me.innerHTML = '';
-		var tabs = [ [ 'marks', 'Highlights' ], [ 'journal', 'Journal' ], [ 'actions', 'Actions' ], [ 'progress', 'Progress' ] ];
+		var tabs = [ [ 'marks', 'Highlights' ], [ 'journal', 'Journal' ], [ 'actions', 'Actions' ], [ 'progress', 'Progress' ], [ 'export', 'Save & sync' ], [ 'account', 'Account' ] ];
 		ui.me.appendChild( h( 'div', { class: 'bk-drawer-head' }, [
 			h( 'div', null, [ h( 'p', { class: 'bk-drawer-title', text: 'My notes' } ) ] ),
 			h( 'button', { class: 'bk-iconbtn', type: 'button', 'aria-label': 'Close', onclick: closeDrawer }, [ icon( 'close' ) ] )
@@ -234,7 +234,9 @@
 		} ) ) );
 		var body = h( 'div', { class: 'bk-me-body' }, [ h( 'p', { class: 'bk-muted', text: 'Loading…' } ) ] );
 		ui.me.appendChild( body );
-		var fill = { marks: meMarks, journal: meJournal, actions: meActions, progress: meProgress }[ tab ];
+		var act = ui.me.querySelector( '.bk-tabs [aria-selected="true"]' );
+		if ( act ) { act.parentNode.scrollLeft = act.offsetLeft - 24; }
+		var fill = { marks: meMarks, journal: meJournal, actions: meActions, progress: meProgress, export: meExport, account: meAccount }[ tab ];
 		fill( body );
 	}
 	function where( chId, sec ) {
@@ -276,8 +278,8 @@
 		} ).catch( function ( e ) { body.innerHTML = ''; body.appendChild( empty( 'Could not load', e.message ) ); } );
 	}
 	function meJournal( body ) {
-		Promise.all( [ api( 'GET', 'entries?book=' + C.book + '&kind=reflect' ), api( 'GET', 'entries?book=' + C.book + '&kind=journal' ) ] ).then( function ( r ) {
-			var rows = r[ 0 ].concat( r[ 1 ] ).sort( function ( a, b ) { return a.updated < b.updated ? 1 : -1; } );
+		Promise.all( [ api( 'GET', 'entries?book=' + C.book + '&kind=reflect' ), api( 'GET', 'entries?book=' + C.book + '&kind=journal' ), api( 'GET', 'entries?book=' + C.book + '&kind=summary' ) ] ).then( function ( r ) {
+			var rows = r[ 0 ].concat( r[ 1 ], r[ 2 ] ).sort( function ( a, b ) { return a.updated < b.updated ? 1 : -1; } );
 			body.innerHTML = '';
 			var ta = h( 'textarea', { class: 'bk-field', rows: 3, placeholder: 'Write a journal entry…' } );
 			body.appendChild( h( 'form', { class: 'bk-new', onsubmit: function ( e ) {
@@ -293,7 +295,7 @@
 			var list = h( 'div', { class: 'bk-cards' } );
 			rows.forEach( function ( x ) {
 				list.appendChild( h( 'article', { class: 'bk-card' }, [
-					h( 'p', { class: 'bk-card-meta', text: ( x.kind === 'reflect' ? 'Reflection · ' : 'Entry · ' ) + ( x.chapter ? where( x.chapter, x.section ) : new Date( x.updated.replace( ' ', 'T' ) + 'Z' ).toLocaleDateString() ) } ),
+					h( 'p', { class: 'bk-card-meta', text: ( x.kind === 'reflect' ? 'Reflection · ' : x.kind === 'summary' ? 'Chapter summary · ' : 'Entry · ' ) + ( x.chapter ? where( x.chapter, x.section ) : new Date( x.updated.replace( ' ', 'T' ) + 'Z' ).toLocaleDateString() ) } ),
 					x.prompt ? h( 'p', { class: 'bk-card-prompt', text: x.prompt } ) : null,
 					h( 'p', { class: 'bk-card-text', text: x.content } ),
 					x.chapter ? h( 'a', { class: 'bk-link', href: '#/c/' + x.chapter + '/' + x.section, onclick: closeDrawer, text: 'Open the section' } ) : null
@@ -356,6 +358,112 @@
 				h( 'div', null, [ h( 'p', { class: 'bk-action-text', text: 'Reading reminder' } ), h( 'p', { class: 'bk-card-meta', text: 'One email 24 hours after you stop reading, until you finish the book.' } ) ] )
 			] ) );
 		} );
+	}
+	function meExport( body ) {
+		body.innerHTML = '';
+		var g = C.google || {};
+		function row( title, text, btns ) {
+			return h( 'section', { class: 'bk-opt' }, [ h( 'div', null, [ h( 'p', { class: 'bk-opt-t', text: title } ), h( 'p', { class: 'bk-opt-d', text: text } ) ] ), h( 'div', { class: 'bk-row' }, btns ) ] );
+		}
+		function busy( b, on, label ) { b.disabled = on; if ( label ) { b.textContent = label; } }
+		var mail = h( 'button', { class: 'bk-btn', type: 'button', text: 'Email me my notes' } );
+		mail.addEventListener( 'click', function () {
+			busy( mail, true, 'Sending…' );
+			api( 'POST', 'notes/email', { book: C.book } ).then( function ( r ) { toast( 'Sent to ' + r.sent ); busy( mail, false, 'Email me my notes' ); } ).catch( function ( e ) { toast( e.message ); busy( mail, false, 'Email me my notes' ); } );
+		} );
+		body.appendChild( row( 'Email', 'Every summary, highlight, reflection, action point and journal entry, sent to ' + S.book.user.email + '.', [ mail ] ) );
+
+		var gbox = h( 'div', { class: 'bk-row' } );
+		function drawG() {
+			gbox.innerHTML = '';
+			if ( ! g.available ) {
+				gbox.appendChild( h( 'p', { class: 'bk-opt-d', text: C.admin ? 'Add a Google OAuth client under Bookkeeper > Settings to turn this on.' : 'Coming soon.' } ) );
+				return;
+			}
+			if ( ! g.connected ) {
+				var c = h( 'button', { class: 'bk-btn', type: 'button', text: 'Connect Google Docs' } );
+				c.addEventListener( 'click', function () {
+					busy( c, true, 'Opening Google…' );
+					api( 'GET', 'google/connect?book=' + C.book ).then( function ( r ) { location.href = r.url; } ).catch( function ( e ) { toast( e.message ); busy( c, false, 'Connect Google Docs' ); } );
+				} );
+				gbox.appendChild( c );
+				return;
+			}
+			var s = h( 'button', { class: 'bk-btn', type: 'button', text: 'Sync now' } );
+			s.addEventListener( 'click', function () {
+				busy( s, true, 'Syncing…' );
+				api( 'POST', 'google/sync', { book: C.book } ).then( function ( r ) { g = C.google = r; toast( 'Your Google Doc is up to date' ); drawG(); } ).catch( function ( e ) { toast( e.message ); busy( s, false, 'Sync now' ); } );
+			} );
+			if ( g.doc ) { gbox.appendChild( h( 'a', { class: 'bk-btn bk-btn--solid', href: g.doc, target: '_blank', rel: 'noopener', text: 'Open my Google Doc' } ) ); }
+			gbox.appendChild( s );
+			var off = h( 'button', { class: 'bk-link bk-link--soft', type: 'button', text: 'Disconnect' } );
+			off.addEventListener( 'click', function () { api( 'POST', 'google/disconnect', { book: C.book } ).then( function ( r ) { g = C.google = r; toast( 'Google Docs disconnected' ); drawG(); } ); } );
+			gbox.appendChild( off );
+		}
+		drawG();
+		body.appendChild( h( 'section', { class: 'bk-opt' }, [ h( 'div', null, [ h( 'p', { class: 'bk-opt-t', text: 'Google Docs' } ), h( 'p', { class: 'bk-opt-d', text: g.connected ? 'Your notes live in a Google Doc and update a couple of minutes after you write.' + ( g.synced ? ' Last synced ' + new Date( g.synced.replace( ' ', 'T' ) + 'Z' ).toLocaleString() + '.' : '' ) : 'Keep a live copy of your notes in your own Google Drive. We can only see the one document we create.' } ) ] ), gbox ] ) );
+
+		function getNotes() { return api( 'GET', 'notes/export?book=' + C.book ); }
+		var share = h( 'button', { class: 'bk-btn', type: 'button', text: navigator.share ? 'Send to Notes' : 'Copy for Notes' } );
+		share.addEventListener( 'click', function () {
+			getNotes().then( function ( r ) {
+				if ( r.empty ) { toast( 'You have not written anything yet' ); return; }
+				if ( navigator.share ) {
+					navigator.share( { title: r.title, text: r.text } ).catch( function () {} );
+				} else if ( navigator.clipboard ) {
+					navigator.clipboard.writeText( r.text ).then( function () { toast( 'Copied. Paste it into a new note.' ); } );
+				}
+			} ).catch( function ( e ) { toast( e.message ); } );
+		} );
+		var dl = h( 'button', { class: 'bk-btn', type: 'button', text: 'Download' } );
+		dl.addEventListener( 'click', function () {
+			getNotes().then( function ( r ) {
+				var a = h( 'a', { href: URL.createObjectURL( new Blob( [ r.markdown ], { type: 'text/markdown' } ) ), download: r.filename } );
+				d.body.appendChild( a ); a.click(); a.remove();
+			} ).catch( function ( e ) { toast( e.message ); } );
+		} );
+		body.appendChild( row( 'Apple Notes and files', 'On iPhone, iPad or Mac, Send to Notes opens the share sheet. Pick Notes. Download saves a text file that opens anywhere.', [ share, dl ] ) );
+	}
+	function meAccount( body ) {
+		body.innerHTML = '';
+		var u = S.book.user;
+		var name = h( 'input', { class: 'bk-input', type: 'text', value: u.name || '', autocomplete: 'given-name' } );
+		body.appendChild( h( 'form', { class: 'bk-acc', onsubmit: function ( e ) {
+			e.preventDefault();
+			api( 'POST', 'account', { name: name.value } ).then( function ( r ) { u.name = r.name; toast( 'Name saved' ); } ).catch( function ( er ) { toast( er.message ); } );
+		} }, [
+			h( 'p', { class: 'bk-opt-t', text: 'Your details' } ),
+			h( 'label', { class: 'bk-lab' }, [ 'First name', name ] ),
+			h( 'label', { class: 'bk-lab' }, [ 'Email', h( 'input', { class: 'bk-input', type: 'email', value: u.email, disabled: true } ) ] ),
+			h( 'button', { class: 'bk-btn', type: 'submit', text: 'Save name' } )
+		] ) );
+		var cur = h( 'input', { class: 'bk-input', type: 'password', autocomplete: 'current-password', required: true } );
+		var nw = h( 'input', { class: 'bk-input', type: 'password', autocomplete: 'new-password', minlength: 8, required: true } );
+		body.appendChild( h( 'form', { class: 'bk-acc', onsubmit: function ( e ) {
+			e.preventDefault();
+			api( 'POST', 'account/password', { current: cur.value, new: nw.value } ).then( function ( r ) { C.nonce = r.nonce; cur.value = nw.value = ''; toast( 'Password changed' ); } ).catch( function ( er ) { toast( er.message ); } );
+		} }, [
+			h( 'p', { class: 'bk-opt-t', text: 'Change password' } ),
+			h( 'label', { class: 'bk-lab' }, [ 'Current password', cur ] ),
+			h( 'label', { class: 'bk-lab' }, [ 'New password', nw ] ),
+			h( 'button', { class: 'bk-btn', type: 'submit', text: 'Change password' } )
+		] ) );
+		if ( C.admin ) {
+			body.appendChild( h( 'p', { class: 'bk-opt-d', text: 'You are signed in as a site admin, so account deletion is turned off here.' } ) );
+		} else {
+			var pw = h( 'input', { class: 'bk-input', type: 'password', autocomplete: 'current-password', required: true } );
+			var del = h( 'form', { class: 'bk-acc bk-acc--danger', onsubmit: function ( e ) {
+				e.preventDefault();
+				api( 'POST', 'account/delete', { password: pw.value } ).then( function ( r ) { location.href = r.home; } ).catch( function ( er ) { toast( er.message ); } );
+			} }, [
+				h( 'p', { class: 'bk-opt-t', text: 'Delete my account' } ),
+				h( 'p', { class: 'bk-opt-d', text: 'This removes your account with every highlight, note, reflection, action point and journal entry. It cannot be undone. If you bought the book, you would need to buy it again.' } ),
+				h( 'label', { class: 'bk-lab' }, [ 'Type your password to confirm', pw ] ),
+				h( 'button', { class: 'bk-btn bk-btn--danger', type: 'submit', text: 'Delete my account' } )
+			] );
+			body.appendChild( del );
+		}
+		body.appendChild( h( 'a', { class: 'bk-link bk-link--soft', href: C.logout, text: 'Sign out' } ) );
 	}
 	function stat( n, l ) { return h( 'div', { class: 'bk-stat' }, [ h( 'span', { text: l.charAt( 0 ).toUpperCase() + l.slice( 1 ) } ), h( 'strong', { text: String( n ) } ) ] ); }
 	function empty( t, s ) { return h( 'div', { class: 'bk-empty' }, [ h( 'p', { class: 'bk-empty-t', text: t } ), h( 'p', { text: s } ) ] ); }
@@ -511,6 +619,7 @@
 				h( 'p', { class: 'bk-sec-meta' }, [ S.sec.minutes + ' min read', h( 'span', { class: 'bk-dots', 'aria-hidden': 'true' }, ch.sections.map( function ( s, k ) { return h( 'i', { class: ( k === i ? 'is-here ' : '' ) + ( isDone( ch.id, k ) ? 'is-done' : '' ) } ); } ) ) ] )
 			] ),
 			text,
+			i === ch.sections.length - 1 ? summaryBlock( ch, i ) : null,
 			h( 'div', { class: 'bk-end', 'aria-hidden': 'true' } ),
 			h( 'nav', { class: 'bk-pager', 'aria-label': 'Sections' }, [
 				prev ? h( 'a', { class: 'bk-pager-prev', href: '#/c/' + prev.c.id + '/' + prev.i }, [ icon( 'left' ), h( 'span', null, [ h( 'small', { text: 'Previous' } ), h( 'span', { text: prev.s.title } ) ] ) ] ) : h( 'span' ),
@@ -523,6 +632,40 @@
 		applyMarks( text );
 		ui.main.classList.remove( 'is-leaving' );
 		watchEnd( art.querySelector( '.bk-end' ), ch.id, i );
+	}
+
+	/* end-of-chapter summary */
+	function summaryBlock( ch, i ) {
+		var key = 'summary-' + ch.id;
+		var saved = S.entries[ key ];
+		var ta = h( 'textarea', { class: 'bk-field', rows: 5, placeholder: 'In your own words, what will you take from this chapter?', 'aria-label': 'Chapter summary' } );
+		ta.value = saved ? saved.content : '';
+		var state = h( 'span', { class: 'bk-saved', 'aria-live': 'polite', text: saved && saved.content ? 'Saved' : '' } );
+		var save = debounce( function () {
+			state.textContent = 'Saving…';
+			api( 'POST', 'entries', { book: C.book, chapter: ch.id, section: i, key: key, kind: 'summary', prompt: 'Chapter ' + ch.num + ' summary', content: ta.value } )
+				.then( function ( e ) { S.entries[ key ] = e; state.textContent = 'Saved'; } )
+				.catch( function ( e ) { state.textContent = e.message; } );
+		}, 900 );
+		ta.addEventListener( 'input', function () { state.textContent = ''; save(); autoGrow( ta ); } );
+		var send = h( 'button', { class: 'bk-btn', type: 'button', text: 'Email me this chapter\'s notes' } );
+		send.addEventListener( 'click', function () {
+			send.disabled = true;
+			var go = function () {
+				api( 'POST', 'notes/email', { book: C.book, chapter: ch.id } ).then( function ( r ) { toast( 'Sent to ' + r.sent ); } ).catch( function ( e ) { toast( e.message ); } ).then( function () { send.disabled = false; } );
+			};
+			if ( ta.value.trim() && ( ! S.entries[ key ] || S.entries[ key ].content !== ta.value ) ) {
+				api( 'POST', 'entries', { book: C.book, chapter: ch.id, section: i, key: key, kind: 'summary', prompt: 'Chapter ' + ch.num + ' summary', content: ta.value } ).then( function ( e ) { S.entries[ key ] = e; state.textContent = 'Saved'; go(); } );
+			} else { go(); }
+		} );
+		setTimeout( function () { autoGrow( ta ); }, 0 );
+		return h( 'section', { class: 'bk-summary' }, [
+			h( 'p', { class: 'bk-block-k', text: 'End of chapter ' + ch.num } ),
+			h( 'h2', { class: 'bk-summary-t', text: 'Sum up this chapter' } ),
+			h( 'p', { class: 'bk-summary-d', text: 'A few lines are enough. We can email it to you with your highlights, reflections and action points from this chapter.' } ),
+			ta,
+			h( 'div', { class: 'bk-summary-foot' }, [ state, send ] )
+		] );
 	}
 
 	/* interactive blocks */
@@ -852,7 +995,7 @@
 	function route() {
 		closeTools();
 		var m = location.hash.match( /^#\/c\/(\d+)\/(\d+)(?:\/m(\d+))?/ );
-		if ( m ) { load( +m[ 1 ], +m[ 2 ], m[ 3 ] ); } else if ( location.hash === '#/buy' ) { flush(); buy(); } else { flush(); home(); }
+		if ( m ) { load( +m[ 1 ], +m[ 2 ], m[ 3 ] ); } else if ( location.hash === '#/buy' ) { flush(); buy(); } else if ( location.hash === '#/notes' ) { flush(); home(); openDrawer( 'me', 'export' ); } else { flush(); home(); }
 	}
 	window.addEventListener( 'hashchange', route );
 	window.addEventListener( 'pagehide', flush );
@@ -862,6 +1005,10 @@
 		S.book = b;
 		setProgress();
 		route();
+		if ( C.gflag ) {
+			toast( { connected: 'Google Docs connected. Your notes are in your Drive.', denied: 'Google Docs was not connected.', error: 'Google Docs could not connect. Please try again.' }[ C.gflag ] || '' );
+			try { history.replaceState( null, '', location.pathname + location.hash ); } catch ( e ) {}
+		}
 		if ( C.thanks !== -1 ) {
 			toast( C.thanks && b.owns ? 'Payment received. The whole book is yours.' : 'The payment did not go through. You have not been charged.' );
 			try { history.replaceState( null, '', location.pathname + location.hash ); } catch ( e ) {}

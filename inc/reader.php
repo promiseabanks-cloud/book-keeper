@@ -72,6 +72,9 @@ function bk_reader_config( $book ) {
 		'mark'   => $u->user_email,
 		'pay'    => bk_pay_config( $book->ID ),
 		'thanks' => isset( $_GET['bk_thanks'] ) ? (int) $_GET['bk_thanks'] : -1, // phpcs:ignore
+		'google' => bk_g_config( $u->ID, $book->ID ),
+		'gflag'  => isset( $_GET['bk_google'] ) ? sanitize_key( $_GET['bk_google'] ) : '', // phpcs:ignore
+		'admin'  => current_user_can( 'manage_options' ),
 	);
 }
 
@@ -113,13 +116,22 @@ function bk_auth_html( $book ) {
 	$b      = bk_brand();
 	$back   = bk_reader_url( $book );
 	$err    = isset( $_GET['bk_err'] ) ? sanitize_key( $_GET['bk_err'] ) : ''; // phpcs:ignore
-	$mode   = isset( $_GET['bk_mode'] ) && 'join' === $_GET['bk_mode'] ? 'join' : 'in'; // phpcs:ignore
+	$mode   = isset( $_GET['bk_mode'] ) && in_array( $_GET['bk_mode'], array( 'join', 'lost' ), true ) ? sanitize_key( $_GET['bk_mode'] ) : 'in'; // phpcs:ignore
+	$rp_key = isset( $_GET['bk_rp'] ) ? sanitize_text_field( wp_unslash( $_GET['bk_rp'] ) ) : ''; // phpcs:ignore
+	$rp_usr = isset( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : ''; // phpcs:ignore
+	if ( $rp_key && $rp_usr ) {
+		$mode = 'reset';
+	}
 	$msgs   = array(
 		'creds'  => 'That email and password do not match.',
 		'exists' => 'An account with that email already exists. Sign in instead.',
 		'email'  => 'Please enter a valid email address.',
 		'pass'   => 'Use a password of at least 8 characters.',
-		'nonce'  => 'The form expired. Please try again.',
+		'nonce'   => 'The form expired. Please try again.',
+		'expired' => 'That reset link has expired or was already used. Ask for a new one below.',
+	);
+	$notes  = array(
+		'sent' => 'If that email has an account, a reset link is on its way. It can take a minute, so check your spam folder too.',
 	);
 	$action = esc_url( admin_url( 'admin-post.php' ) );
 	$logo   = $b['logo'] ? '<img src="' . esc_url( $b['logo'] ) . '" alt="" width="44" height="44">' : '';
@@ -148,6 +160,8 @@ function bk_auth_html( $book ) {
 			</div>
 			<?php if ( $err && isset( $msgs[ $err ] ) ) : ?>
 				<p class="bk-auth-err" role="alert"><?php echo esc_html( $msgs[ $err ] ); ?></p>
+			<?php elseif ( $err && isset( $notes[ $err ] ) ) : ?>
+				<p class="bk-auth-note" role="status"><?php echo esc_html( $notes[ $err ] ); ?></p>
 			<?php endif; ?>
 			<form class="bk-auth-form" data-form="in" method="post" action="<?php echo $action; // phpcs:ignore ?>">
 				<input type="hidden" name="action" value="bk_login">
@@ -156,8 +170,30 @@ function bk_auth_html( $book ) {
 				<label>Email<input type="email" name="email" autocomplete="email" required></label>
 				<label>Password<input type="password" name="pass" autocomplete="current-password" required></label>
 				<button class="bk-btn bk-btn--solid" type="submit">Sign in</button>
-				<a class="bk-auth-forgot" href="<?php echo esc_url( wp_lostpassword_url( $back ) ); ?>">Forgot your password?</a>
+				<button class="bk-auth-forgot" type="button" data-tab="lost">Forgot your password?</button>
 			</form>
+			<form class="bk-auth-form" data-form="lost" method="post" action="<?php echo $action; // phpcs:ignore ?>">
+				<input type="hidden" name="action" value="bk_lost">
+				<input type="hidden" name="back" value="<?php echo esc_url( $back ); ?>">
+				<?php wp_nonce_field( 'bk_auth', 'bk_nonce' ); ?>
+				<h2 class="bk-auth-h">Reset your password</h2>
+				<p class="bk-auth-fine bk-auth-fine--left">Enter the email you signed up with and we will send you a link to choose a new password.</p>
+				<label>Email<input type="email" name="email" autocomplete="email" required></label>
+				<button class="bk-btn bk-btn--solid" type="submit">Email me a reset link</button>
+				<button class="bk-auth-forgot" type="button" data-tab="in">Back to sign in</button>
+			</form>
+			<?php if ( 'reset' === $mode ) : ?>
+			<form class="bk-auth-form" data-form="reset" method="post" action="<?php echo $action; // phpcs:ignore ?>">
+				<input type="hidden" name="action" value="bk_reset">
+				<input type="hidden" name="back" value="<?php echo esc_url( $back ); ?>">
+				<input type="hidden" name="key" value="<?php echo esc_attr( $rp_key ); ?>">
+				<input type="hidden" name="login" value="<?php echo esc_attr( $rp_usr ); ?>">
+				<?php wp_nonce_field( 'bk_auth', 'bk_nonce' ); ?>
+				<h2 class="bk-auth-h">Choose a new password</h2>
+				<label>New password<input type="password" name="pass" autocomplete="new-password" minlength="8" required></label>
+				<button class="bk-btn bk-btn--solid" type="submit">Save and start reading</button>
+			</form>
+			<?php endif; ?>
 			<form class="bk-auth-form" data-form="join" method="post" action="<?php echo $action; // phpcs:ignore ?>">
 				<input type="hidden" name="action" value="bk_register">
 				<input type="hidden" name="back" value="<?php echo esc_url( $back ); ?>">
@@ -173,7 +209,7 @@ function bk_auth_html( $book ) {
 </div>
 <script>
 if(location.hash){document.querySelectorAll('.bk-auth-form input[name=back]').forEach(function(i){i.value=i.value.split('#')[0]+location.hash;});}
-document.querySelectorAll('.bk-auth-tabs button').forEach(function(b){b.addEventListener('click',function(){var c=document.querySelector('.bk-auth-card');c.dataset.mode=b.dataset.tab;document.querySelectorAll('.bk-auth-tabs button').forEach(function(x){x.setAttribute('aria-selected',x===b?'true':'false')});});});
+document.querySelectorAll('.bk-auth-card [data-tab]').forEach(function(b){b.addEventListener('click',function(){var c=document.querySelector('.bk-auth-card');c.dataset.mode=b.dataset.tab;document.querySelectorAll('.bk-auth-tabs button').forEach(function(x){x.setAttribute('aria-selected',x.dataset.tab===b.dataset.tab?'true':'false')});var m=c.querySelector('.bk-auth-err,.bk-auth-note');if(m){m.remove();}var i=c.querySelector('.bk-auth-form[data-form="'+b.dataset.tab+'"] input:not([type=hidden])');if(i){i.focus();}});});
 </script>
 	<?php
 	return ob_get_clean();

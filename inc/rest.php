@@ -2,7 +2,7 @@
 defined( 'ABSPATH' ) || exit;
 
 const BK_COLORS = array( 'yellow', 'green', 'blue', 'pink', 'purple' );
-const BK_KINDS  = array( 'reflect', 'action', 'journal', 'quote' );
+const BK_KINDS  = array( 'reflect', 'action', 'journal', 'quote', 'summary' );
 
 function bk_now() {
 	return current_time( 'mysql', true );
