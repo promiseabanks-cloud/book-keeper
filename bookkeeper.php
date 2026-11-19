@@ -2,7 +2,7 @@
 /**
  * Plugin Name: The Bookkeeper
  * Description: Paid, members-only book reader with journals, reflections, action points, highlights and sticky notes. A Banks Solution product.
- * Version: 0.6.0
+ * Version: 0.7.0
  * Author: Banks Solution
  * Requires PHP: 7.4
  * Text Domain: bookkeeper
@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BK_VERSION', '0.6.0' );
+define( 'BK_VERSION', '0.7.0' );
 define( 'BK_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BK_URL', plugin_dir_url( __FILE__ ) );
 

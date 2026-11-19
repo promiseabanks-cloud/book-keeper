@@ -44,7 +44,10 @@
 			trash: 'M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13',
 			book: 'M5 4h9a4 4 0 014 4v12H9a4 4 0 01-4-4zM5 16a4 4 0 014-4h9',
 			spark: 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6',
-			copy: 'M8 8h11v12H8zM5 16V4h11'
+			copy: 'M8 8h11v12H8zM5 16V4h11',
+			cal: 'M4 6h16v14H4zM4 10h16M8 3v5M16 3v5',
+			flame: 'M12 3c1 4 5 5.5 5 10a5 5 0 01-10 0c0-2.5 1.5-4 2.5-5 .3 1.6 1 2.6 2 3 0-3-1-5.5.5-8z',
+			clock: 'M12 7v5l3 2M12 21a9 9 0 110-18 9 9 0 010 18z'
 		}[ name ];
 		var s = d.createElementNS( 'http://www.w3.org/2000/svg', 'svg' );
 		s.setAttribute( 'viewBox', '0 0 24 24' );
@@ -89,6 +92,99 @@
 		return all.length ? Math.round( 100 * all.filter( function ( x ) { return isDone( x.c.id, x.i ); } ).length / all.length ) : 0;
 	}
 	function go( c, i ) { location.hash = '#/c/' + c + '/' + i; }
+	var still = window.matchMedia && matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+
+	/* progress wheel: an SVG ring that sweeps to its value */
+	function ring( p, size, label ) {
+		var r = 44, c = 2 * Math.PI * r;
+		var ns = 'http://www.w3.org/2000/svg';
+		var svg = d.createElementNS( ns, 'svg' );
+		svg.setAttribute( 'viewBox', '0 0 100 100' );
+		svg.setAttribute( 'class', 'bk-ring-svg' );
+		svg.setAttribute( 'aria-hidden', 'true' );
+		[ 'bk-ring-track', 'bk-ring-val' ].forEach( function ( cls ) {
+			var o = d.createElementNS( ns, 'circle' );
+			o.setAttribute( 'cx', 50 ); o.setAttribute( 'cy', 50 ); o.setAttribute( 'r', r );
+			o.setAttribute( 'class', cls );
+			if ( cls === 'bk-ring-val' ) {
+				o.style.strokeDasharray = c;
+				o.style.strokeDashoffset = c;
+				requestAnimationFrame( function () { requestAnimationFrame( function () { o.style.strokeDashoffset = c * ( 1 - p / 100 ); } ); } );
+			}
+			svg.appendChild( o );
+		} );
+		var num = h( 'strong', { text: '0%' } );
+		count( num, p, '%' );
+		return h( 'div', { class: 'bk-ring', style: '--s:' + size + 'px', role: 'img', 'aria-label': p + '% ' + ( label || 'read' ) }, [ svg, h( 'div', { class: 'bk-ring-in' }, [ num, label ? h( 'span', { text: label } ) : null ] ) ] );
+	}
+	/* numbers that count up to their value */
+	function count( el, n, suffix ) {
+		suffix = suffix || '';
+		if ( still || ! n ) { el.textContent = n + suffix; return; }
+		var t0 = null, dur = 900;
+		function step( t ) {
+			if ( ! t0 ) { t0 = t; }
+			var k = Math.min( 1, ( t - t0 ) / dur );
+			el.textContent = Math.round( n * ( 1 - Math.pow( 1 - k, 3 ) ) ) + suffix;
+			if ( k < 1 ) { requestAnimationFrame( step ); }
+		}
+		requestAnimationFrame( step );
+	}
+	/* stagger children in as they arrive */
+	function rise( root ) {
+		if ( still ) { return; }
+		var els = root.querySelectorAll( '[data-rise]' );
+		els.forEach( function ( el, n ) { el.style.setProperty( '--d', ( n * 60 ) + 'ms' ); } );
+		if ( ! ( 'IntersectionObserver' in window ) ) { els.forEach( function ( el ) { el.classList.add( 'is-in' ); } ); return; }
+		var io = new IntersectionObserver( function ( list ) {
+			list.forEach( function ( x ) { if ( x.isIntersecting ) { x.target.classList.add( 'is-in' ); io.unobserve( x.target ); } } );
+		}, { rootMargin: '0px 0px -8% 0px' } );
+		els.forEach( function ( el ) { io.observe( el ); } );
+	}
+	/* a date field that looks like a button and opens the native picker */
+	function dateField( value, onChange ) {
+		var inp = h( 'input', { type: 'date', value: value || '', 'aria-label': 'Due date (optional)' } );
+		var txt = h( 'span', { class: 'bk-date-t' } );
+		function show() { txt.textContent = inp.value ? niceDate( inp.value ) : 'Add a date'; wrap.classList.toggle( 'has-value', !! inp.value ); }
+		var wrap = h( 'label', { class: 'bk-date' }, [ icon( 'cal' ), txt, inp ] );
+		inp.addEventListener( 'change', function () { show(); if ( onChange ) { onChange( inp.value ); } } );
+		inp.addEventListener( 'click', function () { try { inp.showPicker(); } catch ( e ) {} } );
+		show();
+		wrap.input = inp;
+		return wrap;
+	}
+	function niceDate( iso ) {
+		var p = iso.split( '-' );
+		var dt = new Date( +p[ 0 ], +p[ 1 ] - 1, +p[ 2 ] );
+		return dt.toLocaleDateString( undefined, { weekday: 'short', day: 'numeric', month: 'short' } );
+	}
+	/* add an action point to a calendar: Google by link, Apple and Outlook by .ics */
+	function calDates( e ) {
+		var day = e.due ? e.due.replace( /-/g, '' ) : null;
+		if ( ! day ) { var t = new Date( Date.now() + 864e5 ); day = t.getFullYear() + String( t.getMonth() + 1 ).padStart( 2, '0' ) + String( t.getDate() ).padStart( 2, '0' ); }
+		var n = new Date( +day.slice( 0, 4 ), +day.slice( 4, 6 ) - 1, +day.slice( 6, 8 ) + 1 );
+		return [ day, n.getFullYear() + String( n.getMonth() + 1 ).padStart( 2, '0' ) + String( n.getDate() ).padStart( 2, '0' ) ];
+	}
+	function calLinks( e ) {
+		var ds = calDates( e );
+		var title = e.content;
+		var details = 'Action point from ' + C.title + '. Open the book: ' + location.origin + location.pathname;
+		var g = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent( title ) + '&dates=' + ds[ 0 ] + '/' + ds[ 1 ] + '&details=' + encodeURIComponent( details );
+		var ics = function () {
+			var esc = function ( s ) { return String( s ).replace( /[\\;,]/g, '\\$&' ).replace( /\n/g, '\\n' ); };
+			var body = [ 'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Bookkeeper//EN', 'BEGIN:VEVENT', 'UID:bk-' + e.id + '@' + location.host, 'DTSTAMP:' + new Date().toISOString().replace( /[-:]/g, '' ).slice( 0, 15 ) + 'Z', 'DTSTART;VALUE=DATE:' + ds[ 0 ], 'DTEND;VALUE=DATE:' + ds[ 1 ], 'SUMMARY:' + esc( title ), 'DESCRIPTION:' + esc( details ), 'BEGIN:VALARM', 'TRIGGER:PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:' + esc( title ), 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR' ].join( '\r\n' );
+			var a = h( 'a', { href: URL.createObjectURL( new Blob( [ body ], { type: 'text/calendar' } ) ), download: 'action-point.ics' } );
+			d.body.appendChild( a ); a.click(); a.remove();
+		};
+		return h( 'div', { class: 'bk-cal' }, [
+			h( 'a', { class: 'bk-cal-b', href: g, target: '_blank', rel: 'noopener' }, [ icon( 'cal' ), 'Google Calendar' ] ),
+			h( 'button', { class: 'bk-cal-b', type: 'button', onclick: ics }, [ icon( 'cal' ), 'Apple or Outlook' ] )
+		] );
+	}
+	function greet() {
+		var hr = new Date().getHours();
+		return hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+	}
 
 	/* ---------- shell ---------- */
 	var ui = {};
@@ -324,7 +420,8 @@
 					h( 'label', { class: 'bk-check' }, [ cb, h( 'span', { class: 'bk-box' }, [ icon( 'check' ) ] ) ] ),
 					h( 'div', null, [
 						h( 'p', { class: 'bk-action-text', text: r.content } ),
-						h( 'p', { class: 'bk-card-meta' + ( late ? ' is-late' : '' ), text: ( r.due ? ( late ? 'Overdue · ' : 'Due ' ) + r.due + ' · ' : '' ) + where( r.chapter, r.section ) } )
+						h( 'p', { class: 'bk-card-meta' + ( late ? ' is-late' : '' ), text: ( r.due ? ( late ? 'Overdue, was due ' : 'By ' ) + niceDate( r.due ) + '. ' : '' ) + where( r.chapter, r.section ) } ),
+						r.status !== 'done' ? calLinks( r ) : null
 					] )
 				] );
 				list.appendChild( li );
@@ -340,7 +437,7 @@
 			var p = pct();
 			var mins = Math.round( b.stats.seconds / 60 );
 			var chDone = b.chapters.filter( function ( c ) { return c.sections.every( function ( s, i ) { return isDone( c.id, i ); } ); } ).length;
-			body.appendChild( h( 'div', { class: 'bk-big' }, [ h( 'strong', { text: p + '%' } ), h( 'span', { text: 'of the book read' } ), h( 'div', { class: 'bk-meter' }, [ h( 'span', { style: 'width:' + p + '%' } ) ] ) ] ) );
+			body.appendChild( h( 'div', { class: 'bk-big' }, [ ring( p, 168, 'of the book read' ) ] ) );
 			body.appendChild( h( 'div', { class: 'bk-stats' }, [
 				stat( chDone + '/' + b.chapters.length, 'chapters finished' ),
 				stat( mins < 60 ? mins + ' min' : ( mins / 60 ).toFixed( 1 ) + ' h', 'reading time' ),
@@ -482,38 +579,107 @@
 			if ( f ) { next = { c: f.c, i: f.i }; }
 		}
 		var first = ! S.book.done.length;
-		var wrap = h( 'section', { class: 'bk-home' }, [
-			h( 'p', { class: 'bk-eyebrow', text: first ? 'Welcome, ' + ( S.book.user.name || 'reader' ) : 'Welcome back, ' + ( S.book.user.name || 'reader' ) } ),
-			h( 'h1', { class: 'bk-home-title', text: C.title } ),
-			C.author ? h( 'p', { class: 'bk-home-by', text: 'by ' + C.author } ) : null,
-			next ? h( 'a', { class: 'bk-continue', href: '#/c/' + next.c.id + '/' + next.i }, [
-				h( 'span', { class: 'bk-continue-k', text: first ? 'Start reading' : 'Continue where you left off' } ),
+		var p = pct();
+		var all = flat();
+		var doneN = all.filter( function ( x ) { return isDone( x.c.id, x.i ); } ).length;
+		var name = S.book.user.name || 'reader';
+		var st = S.book.stats;
+		var mins = Math.round( st.seconds / 60 );
+
+		var wrap = h( 'section', { class: 'bk-home' } );
+		wrap.appendChild( h( 'header', { class: 'bk-dash-head', 'data-rise': '' }, [
+			h( 'h1', { class: 'bk-dash-hi', text: ( first ? 'Welcome, ' : greet() + ', ' ) + name + '.' } ),
+			h( 'p', { class: 'bk-dash-sub', text: first ? 'Your copy of ' + C.title + ( C.author ? ' by ' + C.author : '' ) + ' is ready. Start whenever you like; each section takes a few minutes.' : 'You are ' + p + '% of the way through ' + C.title + '. Pick up right where you stopped.' } )
+		] ) );
+
+		var hero = h( 'div', { class: 'bk-dash-hero' } );
+		if ( next ) {
+			hero.appendChild( h( 'a', { class: 'bk-continue', href: '#/c/' + next.c.id + '/' + next.i, 'data-rise': '' }, [
+				h( 'span', { class: 'bk-continue-k', text: first ? 'Start reading' : 'Continue reading' } ),
 				h( 'span', { class: 'bk-continue-t', text: next.c.sections[ next.i ] ? next.c.sections[ next.i ].title : next.c.title } ),
-				h( 'span', { class: 'bk-continue-m', text: 'Chapter ' + next.c.num + ' · ' + next.c.title } ),
+				h( 'span', { class: 'bk-continue-m', text: 'Chapter ' + next.c.num + ', ' + next.c.title + ( next.c.sections[ next.i ] ? '. ' + next.c.sections[ next.i ].minutes + ' min' : '' ) } ),
 				h( 'span', { class: 'bk-continue-go' }, [ icon( 'right' ) ] )
-			] ) : null,
-			h( 'div', { class: 'bk-home-meter' }, [ h( 'div', { class: 'bk-meter' }, [ h( 'span', { style: 'width:' + pct() + '%' } ) ] ), h( 'p', { text: pct() + '% of the book read' } ) ] )
-		] );
+			] ) );
+		}
+		hero.appendChild( h( 'div', { class: 'bk-dash-ring', 'data-rise': '' }, [
+			ring( p, 148, 'read' ),
+			h( 'p', { class: 'bk-dash-ring-m', text: doneN + ' of ' + all.length + ' sections' } )
+		] ) );
+		wrap.appendChild( hero );
+
+		function tile( ic, n, label, suffix ) {
+			var num = h( 'strong', { text: '0' } );
+			count( num, n, suffix );
+			return h( 'div', { class: 'bk-tile', 'data-rise': '' }, [ h( 'span', { class: 'bk-tile-i' }, [ icon( ic ) ] ), num, h( 'span', { class: 'bk-tile-l', text: label } ) ] );
+		}
+		wrap.appendChild( h( 'div', { class: 'bk-tiles' }, [
+			tile( 'clock', mins, 'minutes reading', '' ),
+			tile( 'note', st.marks, 'highlights' ),
+			tile( 'spark', st.reflects, 'reflections' ),
+			tile( 'check', st.actions, 'action points' )
+		] ) );
+
+		var lower = h( 'div', { class: 'bk-dash-cols' } );
+		var acts = h( 'section', { class: 'bk-panel', 'data-rise': '' }, [ h( 'h2', { class: 'bk-panel-t', text: 'Your next steps' } ), h( 'p', { class: 'bk-muted', text: 'Loading…' } ) ] );
+		var hl = h( 'section', { class: 'bk-panel', 'data-rise': '' }, [ h( 'h2', { class: 'bk-panel-t', text: 'Latest highlight' } ), h( 'p', { class: 'bk-muted', text: 'Loading…' } ) ] );
+		lower.appendChild( acts );
+		lower.appendChild( hl );
+		wrap.appendChild( lower );
+		api( 'GET', 'entries?book=' + C.book + '&kind=action' ).then( function ( rows ) {
+			acts.lastChild.remove();
+			var open = rows.filter( function ( r ) { return r.status !== 'done'; } ).sort( function ( a, b ) { return ( a.due || '9' ) < ( b.due || '9' ) ? -1 : 1; } ).slice( 0, 3 );
+			if ( ! open.length ) {
+				acts.appendChild( h( 'p', { class: 'bk-panel-empty', text: rows.length ? 'Every action point is done. Well done.' : 'When a chapter asks what you will do next, your answer shows up here.' } ) );
+				return;
+			}
+			var ul = h( 'ul', { class: 'bk-steps-list' } );
+			open.forEach( function ( r ) {
+				var cb = h( 'input', { type: 'checkbox', 'aria-label': 'Mark done' } );
+				var li = h( 'li', null, [
+					h( 'label', { class: 'bk-check' }, [ cb, h( 'span', { class: 'bk-box' }, [ icon( 'check' ) ] ) ] ),
+					h( 'div', null, [ h( 'p', { class: 'bk-action-text', text: r.content } ), h( 'p', { class: 'bk-card-meta', text: r.due ? 'By ' + niceDate( r.due ) : 'No date yet' } ), calLinks( r ) ] )
+				] );
+				cb.addEventListener( 'change', function () {
+					api( 'PATCH', 'entries/' + r.id, { status: cb.checked ? 'done' : 'open' } ).then( function () { li.classList.toggle( 'is-done', cb.checked ); if ( cb.checked ) { toast( 'Nice work. One step closer.' ); } } );
+				} );
+				ul.appendChild( li );
+			} );
+			acts.appendChild( ul );
+		} ).catch( function () { acts.lastChild.textContent = ''; } );
+		api( 'GET', 'marks?book=' + C.book ).then( function ( rows ) {
+			hl.lastChild.remove();
+			var m = rows.slice().sort( function ( a, b ) { return ( a.updated || '' ) < ( b.updated || '' ) ? 1 : -1; } )[ 0 ];
+			if ( ! m ) {
+				hl.appendChild( h( 'p', { class: 'bk-panel-empty', text: 'Select any line while you read to highlight it. Your latest one appears here.' } ) );
+				return;
+			}
+			hl.appendChild( h( 'blockquote', { class: 'bk-dash-quote bk-card--' + m.color, text: m.quote } ) );
+			if ( m.note ) { hl.appendChild( h( 'p', { class: 'bk-dash-note', text: m.note } ) ); }
+			hl.appendChild( h( 'a', { class: 'bk-link', href: '#/c/' + m.chapter + '/' + m.section + '/m' + m.id, text: 'Go to this passage' } ) );
+		} ).catch( function () { hl.lastChild.textContent = ''; } );
+
 		var grid = h( 'ol', { class: 'bk-chapters' } );
 		S.book.chapters.forEach( function ( c ) {
-			var n = c.sections.filter( function ( s, i ) { return isDone( c.id, i ); } ).length;
-			grid.appendChild( h( 'li', null, [ h( 'a', { class: 'bk-chcard' + ( c.locked ? ' is-locked' : '' ), href: '#/c/' + c.id + '/0' }, [
-				h( 'span', { class: 'bk-chcard-num', text: String( c.num ).padStart( 2, '0' ) } ),
+			var n = c.sections.filter( function ( s, k ) { return isDone( c.id, k ); } ).length;
+			var cp = Math.round( 100 * n / c.sections.length );
+			grid.appendChild( h( 'li', { 'data-rise': '' }, [ h( 'a', { class: 'bk-chcard' + ( c.locked ? ' is-locked' : '' ) + ( cp === 100 ? ' is-done' : '' ), href: '#/c/' + c.id + '/0' }, [
+				h( 'span', { class: 'bk-chcard-num', text: 'Chapter ' + c.num } ),
 				h( 'span', { class: 'bk-chcard-title', text: c.title } ),
-				h( 'span', { class: 'bk-chcard-meta' }, [ c.locked ? icon( 'lock' ) : null, c.locked ? 'Locked' : n + ' of ' + c.sections.length + ' sections', c.free && ! S.book.owns ? h( 'span', { class: 'bk-tag', text: 'Free' } ) : null ] ),
-				h( 'span', { class: 'bk-chcard-bar' }, [ h( 'i', { style: 'width:' + ( 100 * n / c.sections.length ) + '%' } ) ] )
+				h( 'span', { class: 'bk-chcard-meta' }, [ c.locked ? icon( 'lock' ) : null, c.locked ? 'Locked' : ( cp === 100 ? 'Finished' : n + ' of ' + c.sections.length + ' sections' ), c.free && ! S.book.owns ? h( 'span', { class: 'bk-tag', text: 'Free' } ) : null ] ),
+				c.locked ? null : h( 'span', { class: 'bk-chcard-bar' }, [ h( 'i', { style: 'width:' + cp + '%' } ) ] )
 			] ) ] ) );
 		} );
-		wrap.appendChild( h( 'h2', { class: 'bk-h2', text: 'Chapters' } ) );
+		wrap.appendChild( h( 'h2', { class: 'bk-h2', text: 'Chapters', 'data-rise': '' } ) );
 		wrap.appendChild( grid );
 		if ( ! S.book.owns && S.book.chapters.some( function ( c ) { return c.locked; } ) ) {
-			wrap.appendChild( h( 'a', { class: 'bk-unlock', href: '#/buy' }, [
+			wrap.appendChild( h( 'a', { class: 'bk-unlock', href: '#/buy', 'data-rise': '' }, [
 				h( 'span', { class: 'bk-unlock-t', text: 'Enjoying it? Unlock the whole book.' } ),
-				h( 'span', { class: 'bk-unlock-m', text: ( C.pay && C.pay.length ? C.pay.map( function ( p ) { return p.label; } ).join( ' or ' ) + ', one payment' : 'Every chapter, yours for good' ) } ),
+				h( 'span', { class: 'bk-unlock-m', text: ( C.pay && C.pay.length ? C.pay.map( function ( x ) { return x.label; } ).join( ' or ' ) + ', one payment' : 'Every chapter, yours for good' ) } ),
 				h( 'span', { class: 'bk-continue-go' }, [ icon( 'right' ) ] )
 			] ) );
 		}
 		ui.main.appendChild( wrap );
+		rise( wrap );
 		window.scrollTo( 0, 0 );
 	}
 
@@ -622,14 +788,16 @@
 			i === ch.sections.length - 1 ? summaryBlock( ch, i ) : null,
 			h( 'div', { class: 'bk-end', 'aria-hidden': 'true' } ),
 			h( 'nav', { class: 'bk-pager', 'aria-label': 'Sections' }, [
-				prev ? h( 'a', { class: 'bk-pager-prev', href: '#/c/' + prev.c.id + '/' + prev.i }, [ icon( 'left' ), h( 'span', null, [ h( 'small', { text: 'Previous' } ), h( 'span', { text: prev.s.title } ) ] ) ] ) : h( 'span' ),
-				next ? h( 'a', { class: 'bk-pager-next', href: '#/c/' + next.c.id + '/' + next.i }, [ h( 'span', null, [ h( 'small', { text: next.c.id !== ch.id ? 'Next chapter' : 'Next' } ), h( 'span', { text: next.s.title } ) ] ), icon( 'right' ) ] )
+				prev ? h( 'a', { class: 'bk-pager-prev', href: '#/c/' + prev.c.id + '/' + prev.i, title: prev.s.title }, [ icon( 'left' ), h( 'span', null, [ h( 'small', { text: 'Previous' } ), h( 'span', { text: prev.s.title } ) ] ) ] ) : h( 'span', { class: 'bk-pager-gap' } ),
+				next ? h( 'a', { class: 'bk-pager-next', href: '#/c/' + next.c.id + '/' + next.i, title: next.s.title }, [ h( 'span', null, [ h( 'small', { text: next.c.id !== ch.id ? 'Next chapter' : 'Next' } ), h( 'span', { text: next.s.title } ) ] ), icon( 'right' ) ] )
 					: h( 'a', { class: 'bk-pager-next', href: '#/' }, [ h( 'span', null, [ h( 'small', { text: 'You reached the end' } ), h( 'span', { text: 'Back to chapters' } ) ] ), icon( 'right' ) ] )
 			] )
 		] );
 		ui.main.appendChild( art );
 		hydrate( text, ch, i );
 		applyMarks( text );
+		art.querySelectorAll( '.bk-block, .bk-summary, .bk-pager' ).forEach( function ( x ) { x.setAttribute( 'data-rise', '' ); } );
+		rise( art );
 		ui.main.classList.remove( 'is-leaving' );
 		watchEnd( art.querySelector( '.bk-end' ), ch.id, i );
 	}
@@ -700,7 +868,7 @@
 						cb.addEventListener( 'change', function () { api( 'PATCH', 'entries/' + e.id, { status: cb.checked ? 'done' : 'open' } ).then( function ( x ) { S.entries[ key ] = x; draw( x ); } ); } );
 						box.appendChild( h( 'div', { class: 'bk-committed' + ( e.status === 'done' ? ' is-done' : '' ) }, [
 							h( 'label', { class: 'bk-check' }, [ cb, h( 'span', { class: 'bk-box' }, [ icon( 'check' ) ] ) ] ),
-							h( 'div', null, [ h( 'p', { class: 'bk-action-text', text: e.content } ), h( 'p', { class: 'bk-card-meta', text: e.due ? 'Due ' + e.due : 'In your action list' } ) ] ),
+							h( 'div', null, [ h( 'p', { class: 'bk-action-text', text: e.content } ), h( 'p', { class: 'bk-card-meta', text: e.due ? 'By ' + niceDate( e.due ) : 'In your action list' } ), e.status !== 'done' ? calLinks( e ) : null ] ),
 							h( 'button', { class: 'bk-link', type: 'button', text: 'Edit', onclick: function () { form( e ); } } )
 						] ) );
 					} else { form( e ); }
@@ -709,14 +877,15 @@
 					box.innerHTML = '';
 					box.appendChild( h( 'p', { class: 'bk-block-k' }, [ icon( 'spark' ), 'Action point' ] ) );
 					var inp = h( 'input', { class: 'bk-field', type: 'text', placeholder: 'One step you will take', value: e ? e.content : '', 'aria-label': prompt } );
-					var due = h( 'input', { class: 'bk-field bk-field--date', type: 'date', value: e && e.due ? e.due : '', 'aria-label': 'Due date (optional)' } );
+					var dueW = dateField( e && e.due ? e.due : '' );
+					var due = dueW.input;
 					box.appendChild( h( 'form', { class: 'bk-action-form', onsubmit: function ( ev ) {
 						ev.preventDefault();
 						if ( ! inp.value.trim() ) { inp.focus(); return; }
 						api( 'POST', 'entries', { book: C.book, chapter: ch.id, section: i, key: key, kind: 'action', prompt: prompt, content: inp.value, due: due.value, status: 'open' } )
 							.then( function ( x ) { S.entries[ key ] = x; draw( x ); toast( 'Added to your action points' ); } )
 							.catch( function ( er ) { toast( er.message ); } );
-					} }, [ inp, due, h( 'button', { class: 'bk-btn bk-btn--solid', type: 'submit', text: 'Commit' } ) ] ) );
+					} }, [ inp, dueW, h( 'button', { class: 'bk-btn bk-btn--solid', type: 'submit', text: 'Commit' } ) ] ) );
 				};
 				draw( saved );
 				el.appendChild( box );
