@@ -69,6 +69,7 @@ function bk_reader_config( $book ) {
 		'buy'    => $b['buy_url'],
 		'logo'   => $b['logo'],
 		'logout' => wp_logout_url( bk_reader_url( $book ) ),
+		'account' => home_url( '/account/' ),
 		'mark'   => $u->user_email,
 		'pay'    => bk_pay_config( $book->ID ),
 		'thanks' => isset( $_GET['bk_thanks'] ) ? (int) $_GET['bk_thanks'] : -1, // phpcs:ignore
@@ -112,9 +113,9 @@ function bk_page( $title, $body, $config = null ) {
 	<?php
 }
 
-function bk_auth_html( $book ) {
+function bk_auth_html( $book, $back = '' ) {
 	$b      = bk_brand();
-	$back   = bk_reader_url( $book );
+	$back   = $back ? $back : bk_reader_url( $book );
 	$err    = isset( $_GET['bk_err'] ) ? sanitize_key( $_GET['bk_err'] ) : ''; // phpcs:ignore
 	$mode   = isset( $_GET['bk_mode'] ) && in_array( $_GET['bk_mode'], array( 'join', 'lost' ), true ) ? sanitize_key( $_GET['bk_mode'] ) : 'in'; // phpcs:ignore
 	$rp_key = isset( $_GET['bk_rp'] ) ? sanitize_text_field( wp_unslash( $_GET['bk_rp'] ) ) : ''; // phpcs:ignore

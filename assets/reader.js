@@ -318,7 +318,7 @@
 		if ( ! S.book.owns ) {
 			ui.toc.appendChild( h( 'a', { class: 'bk-btn bk-btn--solid bk-btn--block', href: '#/buy', onclick: closeDrawer, text: 'Unlock the full book' } ) );
 		}
-		ui.toc.appendChild( h( 'div', { class: 'bk-drawer-foot' }, [ signOutBtn() ] ) );
+		ui.toc.appendChild( h( 'div', { class: 'bk-drawer-foot' }, [ h( 'a', { class: 'bk-btn bk-btn--out', href: C.account }, [ icon( 'home' ), 'My account' ] ), signOutBtn() ] ) );
 	}
 
 	/* ---------- my notes: highlights, journal, actions, progress ---------- */
@@ -535,7 +535,7 @@
 		} }, [
 			h( 'p', { class: 'bk-opt-t', text: 'Your details' } ),
 			h( 'label', { class: 'bk-lab' }, [ 'First name', name ] ),
-			h( 'label', { class: 'bk-lab' }, [ 'Email', h( 'input', { class: 'bk-input', type: 'email', value: u.email, disabled: true } ) ] ),
+			h( 'label', { class: 'bk-lab' }, [ 'Email', h( 'input', { class: 'bk-input bk-input--fixed', type: 'email', value: u.email, readonly: true } ) ] ),
 			h( 'button', { class: 'bk-btn', type: 'submit', text: 'Save name' } )
 		] ) );
 		var cur = h( 'input', { class: 'bk-input', type: 'password', autocomplete: 'current-password', required: true } );
@@ -1179,7 +1179,7 @@
 	function route() {
 		closeTools();
 		var m = location.hash.match( /^#\/c\/(\d+)\/(\d+)(?:\/m(\d+))?/ );
-		if ( m ) { load( +m[ 1 ], +m[ 2 ], m[ 3 ] ); } else if ( location.hash === '#/buy' ) { flush(); buy(); } else if ( location.hash === '#/notes' ) { flush(); home(); openDrawer( 'me', 'export' ); } else { flush(); home(); }
+		if ( m ) { load( +m[ 1 ], +m[ 2 ], m[ 3 ] ); } else if ( location.hash === '#/buy' ) { flush(); buy(); } else if ( location.hash === '#/notes' ) { flush(); home(); openDrawer( 'me', 'export' ); } else if ( location.hash === '#/account' ) { flush(); home(); openDrawer( 'me', 'account' ); } else { flush(); home(); }
 	}
 	window.addEventListener( 'hashchange', route );
 	window.addEventListener( 'pagehide', flush );
