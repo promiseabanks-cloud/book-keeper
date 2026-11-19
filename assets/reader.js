@@ -347,6 +347,14 @@
 				stat( b.stats.marks, 'highlights' ),
 				stat( b.stats.journal, 'journal entries' )
 			] ) );
+			var rcb = h( 'input', { type: 'checkbox', checked: !! b.user.remind, 'aria-label': 'Daily reading reminder' } );
+			rcb.addEventListener( 'change', function () {
+				api( 'POST', 'prefs', { remind: rcb.checked } ).then( function ( r ) { b.user.remind = r.remind; toast( r.remind ? 'Reminders on' : 'Reminders off' ); } ).catch( function ( e ) { rcb.checked = ! rcb.checked; toast( e.message ); } );
+			} );
+			body.appendChild( h( 'div', { class: 'bk-remind' }, [
+				h( 'label', { class: 'bk-check' }, [ rcb, h( 'span', { class: 'bk-box' }, [ icon( 'check' ) ] ) ] ),
+				h( 'div', null, [ h( 'p', { class: 'bk-action-text', text: 'Reading reminder' } ), h( 'p', { class: 'bk-card-meta', text: 'One email 24 hours after you stop reading, until you finish the book.' } ) ] )
+			] ) );
 		} );
 	}
 	function stat( n, l ) { return h( 'div', { class: 'bk-stat' }, [ h( 'strong', { text: String( n ) } ), h( 'span', { text: l } ) ] ); }

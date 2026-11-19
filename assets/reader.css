@@ -419,6 +419,8 @@ mark.bk-hl.is-flash { animation: bkFlash 1.6s var(--bk-ease) 2; }
 .bk-stat { padding: 16px; border-radius: 14px; background: var(--bk-card); border: 1px solid var(--bk-line); display: grid; gap: 2px; }
 .bk-stat strong { font-size: 24px; letter-spacing: -.02em; }
 .bk-stat span { font-size: 13px; color: var(--bk-soft); }
+.bk-remind { display: flex; gap: 14px; align-items: flex-start; margin-top: 14px; padding: 16px; border-radius: 14px; background: var(--bk-card); border: 1px solid var(--bk-line); }
+.bk-remind .bk-card-meta { margin: 4px 0 0; }
 .bk-empty { padding: 34px 20px; border-radius: 16px; border: 1px dashed color-mix(in srgb, var(--bk-ink) 18%, transparent); text-align: center; }
 .bk-empty p { margin: 0; font-size: 14px; color: var(--bk-soft); line-height: 1.55; }
 .bk-empty-t { font-size: 16px !important; font-weight: 700; color: var(--bk-ink) !important; margin-bottom: 6px !important; }

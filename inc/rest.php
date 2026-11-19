@@ -135,7 +135,7 @@ function bk_rest_book( WP_REST_Request $req ) {
 			'journal'  => isset( $counts['journal'] ) ? (int) $counts['journal']->n : 0,
 			'marks'    => $marks,
 		),
-		'user'     => array( 'name' => $user->display_name, 'email' => $user->user_email ),
+		'user'     => array( 'name' => $user->display_name, 'email' => $user->user_email, 'remind' => function_exists( 'bk_reminders_on' ) ? bk_reminders_on( $uid ) : false ),
 	);
 }
 
