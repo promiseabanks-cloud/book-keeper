@@ -70,6 +70,8 @@ function bk_reader_config( $book ) {
 		'logo'   => $b['logo'],
 		'logout' => wp_logout_url( bk_reader_url( $book ) ),
 		'mark'   => $u->user_email,
+		'pay'    => bk_pay_config( $book->ID ),
+		'thanks' => isset( $_GET['bk_thanks'] ) ? (int) $_GET['bk_thanks'] : -1, // phpcs:ignore
 	);
 }
 
@@ -171,6 +173,7 @@ function bk_auth_html( $book ) {
 	</div>
 </div>
 <script>
+if(location.hash){document.querySelectorAll('.bk-auth-form input[name=back]').forEach(function(i){i.value=i.value.split('#')[0]+location.hash;});}
 document.querySelectorAll('.bk-auth-tabs button').forEach(function(b){b.addEventListener('click',function(){var c=document.querySelector('.bk-auth-card');c.dataset.mode=b.dataset.tab;document.querySelectorAll('.bk-auth-tabs button').forEach(function(x){x.setAttribute('aria-selected',x===b?'true':'false')});});});
 </script>
 	<?php

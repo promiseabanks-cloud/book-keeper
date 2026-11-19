@@ -587,3 +587,20 @@ html[data-font="serif"] { --bk-read-font: "Iowan Old Style", "Palatino Linotype"
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- buying ---------- */
+.bk-buy { display: grid; gap: 10px; max-width: 380px; margin: 0 auto 20px; }
+.bk-buy .bk-btn { width: 100%; justify-content: center; min-height: 52px; font-size: 16px; }
+.bk-buy .bk-btn:disabled { opacity: .6; cursor: wait; }
+.bk-buy-fine { margin: 6px 0 0; font-size: 13px; color: var(--bk-soft); line-height: 1.5; }
+.bk-unlock {
+	position: relative; display: grid; gap: 4px; margin-top: 28px; padding: 22px 84px 22px 26px;
+	border-radius: 20px; border: 1px solid var(--bk-line); background: var(--bk-card); color: var(--bk-ink) !important; text-decoration: none;
+	transition: transform .35s var(--bk-ease), border-color .35s, box-shadow .35s;
+}
+.bk-unlock:hover { transform: translateY(-2px); border-color: var(--bk-accent); box-shadow: 0 18px 36px -26px var(--bk-accent); }
+.bk-unlock-t { font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
+.bk-unlock-m { font-size: 14px; color: var(--bk-soft); }
+.bk-unlock .bk-continue-go { background: var(--bk-accent); color: #fff; }
+.bk-unlock:hover .bk-continue-go { transform: translateX(4px); }
+@media (max-width: 640px) { .bk-unlock { padding: 20px 70px 20px 20px; } .bk-unlock .bk-continue-go { right: 16px; width: 40px; height: 40px; margin-top: -20px; } }

@@ -153,6 +153,10 @@ function bk_seed_demo() {
 	}
 	update_post_meta( $book_id, '_bk_author', 'Ann Uramu' );
 	update_post_meta( $book_id, '_bk_standin', 1 );
+	if ( '' === get_post_meta( $book_id, '_bk_price_ngn', true ) ) {
+		update_post_meta( $book_id, '_bk_price_ngn', 25999 );
+		update_post_meta( $book_id, '_bk_price_usd', 17.99 );
+	}
 
 	$existing = bk_book_chapters( $book_id );
 	foreach ( bk_seed_parse( bk_seed_manuscript() ) as $n => $ch ) {

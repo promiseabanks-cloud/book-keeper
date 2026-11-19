@@ -216,7 +216,7 @@
 		} );
 		ui.toc.appendChild( list );
 		if ( ! S.book.owns ) {
-			ui.toc.appendChild( h( 'a', { class: 'bk-btn bk-btn--solid bk-btn--block', href: C.buy, text: 'Unlock the full book' } ) );
+			ui.toc.appendChild( h( 'a', { class: 'bk-btn bk-btn--solid bk-btn--block', href: '#/buy', onclick: closeDrawer, text: 'Unlock the full book' } ) );
 		}
 		ui.toc.appendChild( h( 'a', { class: 'bk-drawer-foot', href: C.logout, text: 'Sign out' } ) );
 	}
@@ -398,7 +398,59 @@
 		} );
 		wrap.appendChild( h( 'h2', { class: 'bk-h2', text: 'Chapters' } ) );
 		wrap.appendChild( grid );
+		if ( ! S.book.owns && S.book.chapters.some( function ( c ) { return c.locked; } ) ) {
+			wrap.appendChild( h( 'a', { class: 'bk-unlock', href: '#/buy' }, [
+				h( 'span', { class: 'bk-unlock-t', text: 'Enjoying it? Unlock the whole book.' } ),
+				h( 'span', { class: 'bk-unlock-m', text: ( C.pay && C.pay.length ? C.pay.map( function ( p ) { return p.label; } ).join( ' or ' ) + ', one payment' : 'Every chapter, yours for good' ) } ),
+				h( 'span', { class: 'bk-continue-go' }, [ icon( 'right' ) ] )
+			] ) );
+		}
 		ui.main.appendChild( wrap );
+		window.scrollTo( 0, 0 );
+	}
+
+	/* ---------- buying ---------- */
+	function buyButtons() {
+		var pay = C.pay || [];
+		if ( ! pay.length ) {
+			return h( 'div', { class: 'bk-row' }, [ h( 'a', { class: 'bk-btn bk-btn--solid', href: C.buy, text: 'Unlock the full book' } ) ] );
+		}
+		var box = h( 'div', { class: 'bk-buy' } );
+		pay.forEach( function ( p, n ) {
+			var b = h( 'button', { type: 'button', class: 'bk-btn ' + ( n ? '' : 'bk-btn--solid' ), text: ( n ? 'Pay ' : 'Unlock for ' ) + p.label } );
+			b.addEventListener( 'click', function () {
+				if ( S.paying ) { return; }
+				S.paying = true;
+				box.querySelectorAll( 'button' ).forEach( function ( x ) { x.disabled = true; } );
+				b.textContent = 'Opening secure checkout…';
+				api( 'POST', 'checkout', { book: C.book, currency: p.cur } ).then( function ( r ) {
+					location.href = r.url;
+				} ).catch( function ( e ) {
+					S.paying = false;
+					box.querySelectorAll( 'button' ).forEach( function ( x ) { x.disabled = false; } );
+					b.textContent = ( n ? 'Pay ' : 'Unlock for ' ) + p.label;
+					toast( e.message );
+				} );
+			} );
+			box.appendChild( b );
+		} );
+		box.appendChild( h( 'p', { class: 'bk-buy-fine', text: 'One payment, yours for good. Secure checkout by Paystack, with cards, bank transfer and USSD.' } ) );
+		return box;
+	}
+	function buy() {
+		S.route = null;
+		ui.main.innerHTML = '';
+		ui.where.textContent = '';
+		if ( S.book.owns ) { location.hash = '#/'; return; }
+		var locked = S.book.chapters.filter( function ( c ) { return c.locked; } );
+		ui.main.appendChild( h( 'section', { class: 'bk-locked' }, [
+			h( 'span', { class: 'bk-locked-i' }, [ icon( 'book' ) ] ),
+			h( 'h1', { text: 'Unlock ' + C.title } ),
+			h( 'p', { class: 'bk-lead', text: 'Get every chapter, plus your journal, highlights, notes and action points, on any device.' } ),
+			h( 'ul', { class: 'bk-locked-list' }, locked.map( function ( c ) { return h( 'li', { text: 'Chapter ' + c.num + ': ' + c.title } ); } ) ),
+			buyButtons(),
+			h( 'p', null, [ h( 'a', { class: 'bk-link', href: '#/', text: 'Back to chapters' } ) ] )
+		] ) );
 		window.scrollTo( 0, 0 );
 	}
 
@@ -412,7 +464,8 @@
 			h( 'h1', { text: c.title } ),
 			h( 'p', { class: 'bk-lead', text: 'This chapter is part of the full book. Unlock it once and keep every chapter, your journal and your notes for good.' } ),
 			h( 'ul', { class: 'bk-locked-list' }, c.sections.map( function ( s ) { return h( 'li', { text: s.title } ); } ) ),
-			h( 'div', { class: 'bk-row' }, [ h( 'a', { class: 'bk-btn bk-btn--solid', href: C.buy, text: 'Unlock the full book' } ), h( 'a', { class: 'bk-btn', href: '#/', text: 'Back to chapters' } ) ] )
+			buyButtons(),
+			h( 'p', null, [ h( 'a', { class: 'bk-link', href: '#/', text: 'Back to chapters' } ) ] )
 		] ) );
 		window.scrollTo( 0, 0 );
 	}
@@ -800,7 +853,7 @@
 	function route() {
 		closeTools();
 		var m = location.hash.match( /^#\/c\/(\d+)\/(\d+)(?:\/m(\d+))?/ );
-		if ( m ) { load( +m[ 1 ], +m[ 2 ], m[ 3 ] ); } else { flush(); home(); }
+		if ( m ) { load( +m[ 1 ], +m[ 2 ], m[ 3 ] ); } else if ( location.hash === '#/buy' ) { flush(); buy(); } else { flush(); home(); }
 	}
 	window.addEventListener( 'hashchange', route );
 	window.addEventListener( 'pagehide', flush );
@@ -810,6 +863,10 @@
 		S.book = b;
 		setProgress();
 		route();
+		if ( C.thanks !== -1 ) {
+			toast( C.thanks && b.owns ? 'Payment received. The whole book is yours.' : 'The payment did not go through. You have not been charged.' );
+			try { history.replaceState( null, '', location.pathname + location.hash ); } catch ( e ) {}
+		}
 	} ).catch( function ( e ) {
 		app.innerHTML = '';
 		app.appendChild( h( 'div', { class: 'bk-locked' }, [ h( 'h1', { text: 'We could not open the book' } ), h( 'p', { class: 'bk-lead', text: e.message } ), h( 'a', { class: 'bk-btn bk-btn--solid', href: location.href, text: 'Try again' } ) ] ) );

@@ -57,6 +57,23 @@ function bk_install_tables() {
 		KEY user_book (user_id,book_id)
 	) $c;" );
 
+	dbDelta( "CREATE TABLE {$p}orders (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		reference varchar(64) NOT NULL,
+		user_id bigint(20) unsigned NOT NULL,
+		book_id bigint(20) unsigned NOT NULL,
+		currency char(3) NOT NULL DEFAULT 'NGN',
+		amount bigint(20) unsigned NOT NULL DEFAULT 0,
+		status varchar(20) NOT NULL DEFAULT 'pending',
+		mode varchar(10) NOT NULL DEFAULT 'test',
+		paystack_id varchar(40) NOT NULL DEFAULT '',
+		created datetime NOT NULL,
+		updated datetime NOT NULL,
+		PRIMARY KEY  (id),
+		UNIQUE KEY reference (reference),
+		KEY user_book (user_id,book_id)
+	) $c;" );
+
 	update_option( 'bk_db_version', BK_VERSION );
 }
 

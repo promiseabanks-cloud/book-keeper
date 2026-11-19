@@ -1,7 +1,7 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-/* ---------- mail through Brevo (or any SMTP) ---------- */
+/* ---------- mail through SMTP (a cPanel mailbox or any SMTP service) ---------- */
 
 function bk_mail_opts() {
 	return wp_parse_args(
@@ -79,6 +79,7 @@ function bk_settings_page() {
 			$o['key'] = $key;
 		}
 		update_option( 'bk_mail', $o, false );
+		bk_pay_settings_save();
 		$msg = 'Settings saved.';
 		if ( ! empty( $_POST['test'] ) ) {
 			$to  = wp_get_current_user()->user_email;
@@ -103,6 +104,7 @@ function bk_settings_page() {
 				<tr><th scope="row"><label for="bk-from">From address</label></th><td><input id="bk-from" class="regular-text" name="from" type="email" value="<?php echo esc_attr( $o['from'] ); ?>"><p class="description">Use the same mailbox address as the login.</p></td></tr>
 				<tr><th scope="row"><label for="bk-fromname">From name</label></th><td><input id="bk-fromname" class="regular-text" name="from_name" value="<?php echo esc_attr( $o['from_name'] ); ?>" placeholder="Vivere"></td></tr>
 			</table>
+			<?php bk_pay_settings_fields(); ?>
 			<p class="submit">
 				<button class="button button-primary" type="submit">Save</button>
 				<button class="button" type="submit" name="test" value="1">Save and send me a test email</button>
@@ -136,7 +138,7 @@ function bk_readers_page() {
 	<div class="wrap">
 		<h1>Readers</h1>
 		<?php if ( $msg ) : ?><div class="notice notice-info"><p><?php echo esc_html( $msg ); ?></p></div><?php endif; ?>
-		<p>Readers create their own account on the reading page. Use this to unlock a book for someone without payment.</p>
+		<p>Readers create their own account on the reading page and unlock the book with Paystack. Use this to unlock a book for someone without payment, such as a gift or a tester.</p>
 		<form method="post">
 			<?php wp_nonce_field( 'bk_grant', 'bk_grant_nonce' ); ?>
 			<p><input type="email" name="email" class="regular-text" placeholder="reader@example.com" required>
@@ -144,6 +146,7 @@ function bk_readers_page() {
 			<button class="button button-primary" type="submit">Give access</button>
 			<button class="button" type="submit" name="revoke" value="1">Remove access</button></p>
 		</form>
+		<?php bk_orders_table(); ?>
 	</div>
 	<?php
 }
