@@ -23,6 +23,8 @@ function bk_sender_name() {
  *     @type string $feature   Optional highlighted title (e.g. the next section).
  *     @type array  $cta       Optional array( label, url ).
  *     @type array  $after     Optional paragraphs after the button.
+ *     @type array  $tour      Optional list of array( title, text ) shown as numbered steps after the button.
+ *     @type string $tour_head Optional heading above the tour.
  *     @type string $foot      Footer HTML (already escaped by the caller).
  * }
  */
@@ -66,6 +68,15 @@ function bk_email_html( $a ) {
 		$h .= '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 4px"><tr><td style="border-radius:10px;background:' . $accent . '">';
 		$h .= '<a href="' . esc_url( $a['cta'][1] ) . '" style="display:inline-block;padding:15px 26px;border-radius:10px;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none">' . esc_html( $a['cta'][0] ) . '</a></td></tr></table>';
 	}
+	if ( ! empty( $a['tour'] ) ) {
+		$h .= '<h2 style="margin:36px 0 6px;font-size:18px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:' . $ink . '">' . esc_html( $a['tour_head'] ?? '' ) . '</h2>';
+		$h .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0">';
+		foreach ( $a['tour'] as $n => $step ) {
+			$h .= '<tr><td valign="top" width="34" style="padding:16px 0;border-bottom:1px solid ' . $line . ';font-size:14px;font-weight:700;color:' . $accent . '">' . sprintf( '%02d', $n + 1 ) . '</td>';
+			$h .= '<td valign="top" style="padding:16px 0;border-bottom:1px solid ' . $line . '"><p style="margin:0 0 4px;font-size:15px;font-weight:700;color:' . $ink . '">' . esc_html( $step[0] ) . '</p><p style="margin:0;font-size:14px;line-height:1.6;color:#4A3F44">' . esc_html( $step[1] ) . '</p></td></tr>';
+		}
+		$h .= '</table>';
+	}
 	foreach ( (array) ( $a['after'] ?? array() ) as $t ) {
 		$h .= '<p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:' . $soft . '">' . esc_html( $t ) . '</p>';
 	}
@@ -94,6 +105,12 @@ function bk_email_text( $a ) {
 	}
 	if ( ! empty( $a['cta'] ) ) {
 		$t .= $a['cta'][0] . ': ' . $a['cta'][1] . "\n\n";
+	}
+	if ( ! empty( $a['tour'] ) ) {
+		$t .= ( $a['tour_head'] ?? '' ) . "\n\n";
+		foreach ( $a['tour'] as $n => $step ) {
+			$t .= ( $n + 1 ) . '. ' . $step[0] . "\n" . $step[1] . "\n\n";
+		}
 	}
 	foreach ( (array) ( $a['after'] ?? array() ) as $p ) {
 		$t .= $p . "\n\n";
@@ -130,9 +147,18 @@ function bk_welcome_args( $user, $book_id ) {
 		'heading'   => 'Welcome to ' . $title,
 		'paras'     => array(
 			'Hi ' . bk_first_name( $user ) . ', your account is ready and chapter one is yours to read now.',
-			'The book is split into short sections, so you can read one in a few minutes. As you go, highlight the lines that stay with you, pin notes to them and answer the reflections. Everything is saved to your account and waits for you on any device.',
+			'This is more than a book. Each chapter is a short read with a workbook built in, so the ideas turn into decisions. Everything you write is private and saved to your account, on any device.',
 		),
 		'cta'       => array( 'Start chapter one', bk_reader_url( $book_id ) ),
+		'tour_head' => 'A quick tour of the reader',
+		'tour'      => array(
+			array( 'Read one section at a time', 'Every chapter is split into short sections of a few minutes each. Use Next at the bottom to move on, or open the menu at the top left to jump to any chapter. The reader remembers where you stopped.' ),
+			array( 'Highlight and pin notes', 'Select any line to highlight it in one of five colours. Tap the note button on the toolbar to pin a sticky note to that line, like writing in the margin.' ),
+			array( 'Answer the reflections', 'Reflection questions sit inside the chapters. Type your answer right there. It saves as you write and goes into your journal.' ),
+			array( 'Commit to action points', 'Where a chapter asks what you will do next, write the step and pick a date. Tick it off when it is done.' ),
+			array( 'Find everything in My notes', 'The My notes button at the top right gathers your highlights, journal, action points and reading progress in one place. You can also write free journal entries there.' ),
+			array( 'Make it comfortable', 'Tap Aa to switch the reading mood (paper, white, warm, dark or night), change the text size or choose a serif typeface.' ),
+		),
 		'after'     => array( $price ? 'When you are ready for the rest, you can unlock the whole book for ' . $price . ', once.' : 'When you are ready for the rest, you can unlock the whole book from inside the reader.' ),
 		'foot'      => 'You are getting this because you created an account at ' . esc_html( wp_parse_url( home_url(), PHP_URL_HOST ) ) . '.',
 		'foot_text' => 'You are getting this because you created an account at ' . wp_parse_url( home_url(), PHP_URL_HOST ) . '.',
