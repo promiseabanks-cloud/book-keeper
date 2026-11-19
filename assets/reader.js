@@ -602,7 +602,7 @@
 
 		var wrap = h( 'section', { class: 'bk-home' } );
 		wrap.appendChild( h( 'header', { class: 'bk-dash-head', 'data-rise': '' }, [
-			h( 'a', { class: 'bk-btn bk-dash-site', href: C.home }, [ 'Visit the website', icon( 'ext' ) ] ),
+			h( 'a', { class: 'bk-btn bk-dash-site', href: C.home }, [ icon( 'left' ), 'Go back to website' ] ),
 			h( 'h1', { class: 'bk-dash-hi', text: ( first ? 'Welcome, ' : greet() + ', ' ) + name + '.' } ),
 			h( 'p', { class: 'bk-dash-sub', text: first ? 'Your copy of ' + C.title + ( C.author ? ' by ' + C.author : '' ) + ' is ready. Start whenever you like; each section takes a few minutes.' : 'You are ' + p + '% of the way through ' + C.title + '. Pick up right where you stopped.' } )
 		] ) );
