@@ -47,7 +47,7 @@ add_action(
 );
 
 /** Progress numbers for one reader in one book. */
-function bk_book_progress( $uid, $book_id ) {
+function bk_lib_progress( $uid, $book_id ) {
 	global $wpdb;
 	$total = 0;
 	foreach ( bk_book_chapters( $book_id ) as $ch ) {
@@ -128,7 +128,7 @@ function bk_account_html( $user, $books ) {
 		<?php
 		foreach ( $books as $book ) :
 			$owns  = bk_user_owns( $uid, $book->ID );
-			$p     = bk_book_progress( $uid, $book->ID );
+			$p     = bk_lib_progress( $uid, $book->ID );
 			$cover = get_the_post_thumbnail_url( $book, 'medium_large' );
 			$by    = (string) get_post_meta( $book->ID, '_bk_author', true );
 			$url   = bk_reader_url( $book );
