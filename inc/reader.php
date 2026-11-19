@@ -92,6 +92,8 @@ function bk_page( $title, $body, $config = null ) {
 <?php endif; ?>
 :root{--bk-accent:<?php echo esc_html( $b['accent'] ); ?>;--bk-dark:<?php echo esc_html( $b['dark'] ); ?>;--bk-paper:<?php echo esc_html( $b['paper'] ); ?>;--bk-ink:<?php echo esc_html( $b['ink'] ); ?>;--bk-font:<?php echo wp_strip_all_tags( $b['font'] ); // phpcs:ignore ?>}
 </style>
+<meta name="theme-color" content="<?php echo esc_attr( $b['paper'] ); ?>">
+<script>try{var p=JSON.parse(localStorage.getItem('bk-prefs')||'{}')||{},r=document.documentElement;r.setAttribute('data-mood',p.mood||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'paper'));if(p.font){r.setAttribute('data-font',p.font);}if(p.size){r.style.setProperty('--bk-scale',p.size);}}catch(e){}</script>
 <link rel="stylesheet" href="<?php echo esc_url( BK_URL . 'assets/reader.css?ver=' . $ver ); ?>">
 </head>
 <body class="bk-body">

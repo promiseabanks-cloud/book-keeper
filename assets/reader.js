@@ -102,6 +102,7 @@
 			] ),
 			ui.where = h( 'span', { class: 'bk-bar-where' } ),
 			h( 'div', { class: 'bk-bar-right' }, [
+				ui.aa = h( 'button', { class: 'bk-iconbtn bk-aa', type: 'button', 'aria-label': 'Reading settings', 'aria-expanded': 'false', onclick: function ( e ) { e.stopPropagation(); toggleDisplay(); } }, [ h( 'span', { text: 'A' } ), h( 'span', { text: 'a' } ) ] ),
 				h( 'button', { class: 'bk-pill', type: 'button', onclick: function () { openDrawer( 'me' ); } }, [ icon( 'note' ), h( 'span', { text: 'My notes' } ) ] ),
 				h( 'a', { class: 'bk-iconbtn', href: C.home, 'aria-label': 'Close the book' }, [ icon( 'close' ) ] )
 			] ),
@@ -114,17 +115,67 @@
 		ui.tools = h( 'div', { class: 'bk-tools bk-ui', role: 'toolbar', 'aria-label': 'Highlight' } );
 		ui.sticky = h( 'div', { class: 'bk-sticky bk-ui', role: 'dialog', 'aria-label': 'Note' } );
 		ui.wm = h( 'div', { class: 'bk-wm', 'aria-hidden': 'true' } );
-		[ ui.bar, ui.main, ui.scrim, ui.toc, ui.me, ui.tools, ui.sticky, ui.wm ].forEach( function ( x ) { app.appendChild( x ); } );
+		ui.disp = h( 'div', { class: 'bk-display', role: 'dialog', 'aria-label': 'Reading settings' } );
+		[ ui.bar, ui.main, ui.scrim, ui.toc, ui.me, ui.tools, ui.sticky, ui.wm, ui.disp ].forEach( function ( x ) { app.appendChild( x ); } );
 		watermark();
 	}
 	function watermark() {
 		var t = ( C.mark || '' ).replace( /[<&>]/g, '' );
-		var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="340" height="220"><text x="0" y="120" transform="rotate(-24 170 110)" font-family="sans-serif" font-size="13" fill="rgba(29,20,24,0.045)">' + t + '</text></svg>';
+		var dark = prefs.mood === 'dark' || prefs.mood === 'night';
+		var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="340" height="220"><text x="0" y="120" transform="rotate(-24 170 110)" font-family="sans-serif" font-size="13" fill="' + ( dark ? 'rgba(255,255,255,0.04)' : 'rgba(29,20,24,0.045)' ) + '">' + t + '</text></svg>';
 		ui.wm.style.backgroundImage = 'url("data:image/svg+xml;charset=utf-8,' + encodeURIComponent( svg ) + '")';
 	}
 	function setProgress() {
 		ui.prog.firstChild.style.width = pct() + '%';
 	}
+
+	/* ---------- reading settings: mood, text size, typeface ---------- */
+	var MOODS = [ [ 'paper', 'Paper' ], [ 'white', 'White' ], [ 'warm', 'Warm' ], [ 'dark', 'Dark' ], [ 'night', 'Night' ] ];
+	var SIZES = [ 0.88, 1, 1.12, 1.24, 1.38 ];
+	var prefs = ( function () {
+		var p = {};
+		try { p = JSON.parse( localStorage.getItem( 'bk-prefs' ) || '{}' ) || {}; } catch ( e ) {}
+		if ( ! p.mood ) { p.mood = window.matchMedia && matchMedia( '(prefers-color-scheme: dark)' ).matches ? 'dark' : 'paper'; }
+		if ( SIZES.indexOf( p.size ) < 0 ) { p.size = 1; }
+		if ( p.font !== 'serif' ) { p.font = 'sans'; }
+		return p;
+	}() );
+	function applyPrefs( save ) {
+		var r = d.documentElement;
+		r.setAttribute( 'data-mood', prefs.mood );
+		r.setAttribute( 'data-font', prefs.font );
+		r.style.setProperty( '--bk-scale', prefs.size );
+		var meta = d.querySelector( 'meta[name="theme-color"]' );
+		if ( meta ) { meta.setAttribute( 'content', getComputedStyle( r ).getPropertyValue( '--bk-paper' ).trim() ); }
+		if ( ui.wm ) { watermark(); }
+		if ( save ) { try { localStorage.setItem( 'bk-prefs', JSON.stringify( prefs ) ); } catch ( e ) {} }
+	}
+	function renderDisplay() {
+		ui.disp.innerHTML = '';
+		var si = SIZES.indexOf( prefs.size );
+		ui.disp.appendChild( h( 'p', { class: 'bk-display-k', text: 'Reading mood' } ) );
+		ui.disp.appendChild( h( 'div', { class: 'bk-moods' }, MOODS.map( function ( m ) {
+			return h( 'button', { type: 'button', class: 'bk-mood bk-mood--' + m[ 0 ], 'aria-pressed': prefs.mood === m[ 0 ] ? 'true' : 'false', onclick: function () { prefs.mood = m[ 0 ]; applyPrefs( true ); renderDisplay(); } }, [ h( 'i', { text: 'Aa' } ), m[ 1 ] ] );
+		} ) ) );
+		ui.disp.appendChild( h( 'p', { class: 'bk-display-k', text: 'Text size' } ) );
+		var step = function ( dir ) { prefs.size = SIZES[ Math.min( SIZES.length - 1, Math.max( 0, si + dir ) ) ]; applyPrefs( true ); renderDisplay(); };
+		ui.disp.appendChild( h( 'div', { class: 'bk-size' }, [
+			h( 'button', { type: 'button', 'aria-label': 'Smaller text', disabled: si === 0, onclick: function () { step( -1 ); }, text: 'A' } ),
+			h( 'span', { class: 'bk-steps', 'aria-hidden': 'true' }, SIZES.map( function ( x, k ) { return h( 'i', { class: k === si ? 'is-on' : '' } ); } ) ),
+			h( 'button', { type: 'button', 'aria-label': 'Larger text', disabled: si === SIZES.length - 1, onclick: function () { step( 1 ); }, text: 'A' } )
+		] ) );
+		ui.disp.appendChild( h( 'p', { class: 'bk-display-k', text: 'Typeface' } ) );
+		ui.disp.appendChild( h( 'div', { class: 'bk-fonts' }, [ [ 'sans', 'Sans' ], [ 'serif', 'Serif' ] ].map( function ( f ) {
+			return h( 'button', { type: 'button', 'aria-pressed': prefs.font === f[ 0 ] ? 'true' : 'false', text: f[ 1 ], onclick: function () { prefs.font = f[ 0 ]; applyPrefs( true ); renderDisplay(); } } );
+		} ) ) );
+	}
+	function toggleDisplay( force ) {
+		var on = typeof force === 'boolean' ? force : ! ui.disp.classList.contains( 'is-on' );
+		if ( on ) { closeTools(); closeDrawer(); renderDisplay(); }
+		ui.disp.classList.toggle( 'is-on', on );
+		ui.aa.setAttribute( 'aria-expanded', on ? 'true' : 'false' );
+	}
+	applyPrefs( false );
 
 	/* ---------- drawers ---------- */
 	function openDrawer( which ) {
@@ -711,6 +762,7 @@
 			if ( m ) { e.preventDefault(); pending = null; pin ? openSticky( m ) : showTools( markRect( m.id ), m ); }
 			return;
 		}
+		if ( e.target.isConnected && ! e.target.closest( '.bk-display, .bk-aa' ) ) { toggleDisplay( false ); }
 		if ( ! e.target.closest( '.bk-tools, .bk-sticky' ) && window.getSelection().isCollapsed ) { closeTools(); }
 	} );
 
@@ -729,7 +781,7 @@
 
 	/* keyboard */
 	d.addEventListener( 'keydown', function ( e ) {
-		if ( e.key === 'Escape' ) { closeTools(); closeDrawer(); return; }
+		if ( e.key === 'Escape' ) { closeTools(); closeDrawer(); toggleDisplay( false ); return; }
 		if ( /input|textarea|select/i.test( ( e.target.tagName || '' ) ) || e.metaKey || e.ctrlKey || e.altKey ) { return; }
 		if ( e.key === 'ArrowRight' ) { var n = ui.main.querySelector( '.bk-pager-next' ); if ( n ) { n.click(); } }
 		if ( e.key === 'ArrowLeft' ) { var p = ui.main.querySelector( '.bk-pager-prev' ); if ( p ) { p.click(); } }
