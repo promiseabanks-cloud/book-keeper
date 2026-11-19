@@ -78,43 +78,9 @@ function bk_reminder_email( $user_id, $book_id, $last, $done, $total ) {
 	if ( ! $user || ! is_email( $user->user_email ) ) {
 		return false;
 	}
-	$b       = bk_brand();
-	$title   = get_the_title( $book_id );
-	$secs    = bk_chapter_sections( (int) $last['chapter'] );
-	$here    = isset( $secs[ (int) $last['section'] ] ) ? $secs[ (int) $last['section'] ]['title'] : '';
-	$url     = bk_reader_url( $book_id ) . '#/c/' . (int) $last['chapter'] . '/' . (int) $last['section'];
-	$pct     = $total ? (int) round( 100 * $done / $total ) : 0;
-	$name    = $user->first_name ?: $user->display_name;
-	$subject = $here ? 'Pick up where you left off: ' . $here : 'Your next section of ' . $title . ' is waiting';
-	$accent  = $b['accent'];
-
-	$lead = $done
-		? sprintf( 'You are %d%% of the way through %s. Your next section takes a few minutes, and your notes and highlights are right where you left them.', $pct, $title )
-		: sprintf( 'You opened %s yesterday. Your next section takes a few minutes, and everything you saved is waiting for you.', $title );
-
-	$html  = '<!doctype html><html><body style="margin:0;background:' . esc_attr( $b['paper'] ) . ';font-family:Helvetica,Arial,sans-serif;color:' . esc_attr( $b['ink'] ) . '">';
-	$html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">';
-	$html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px">';
-	$html .= '<tr><td style="padding:32px 32px 8px;font-size:15px;line-height:1.6">';
-	$html .= '<p style="margin:0 0 16px">Hi ' . esc_html( $name ) . ',</p>';
-	$html .= '<p style="margin:0 0 20px">' . esc_html( $lead ) . '</p>';
-	if ( $here ) {
-		$html .= '<p style="margin:0 0 4px;font-size:13px;color:#7a6d73">Next up</p><p style="margin:0 0 24px;font-size:20px;font-weight:bold;line-height:1.3">' . esc_html( $here ) . '</p>';
-	}
-	$html .= '<p style="margin:0 0 8px"><a href="' . esc_url( $url ) . '" style="display:inline-block;background:' . esc_attr( $accent ) . ';color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 26px;border-radius:999px">Continue reading</a></p>';
-	$html .= '</td></tr><tr><td style="padding:24px 32px 28px;font-size:12px;line-height:1.5;color:#7a6d73">';
-	$html .= 'You get one reminder a day after you stop reading, until you finish the book. <a href="' . esc_url( bk_unsub_url( $user_id ) ) . '" style="color:#7a6d73">Turn off reminders</a>.';
-	$html .= '</td></tr></table></td></tr></table></body></html>';
-
-	$text = "Hi $name,\n\n$lead\n\n" . ( $here ? "Next up: $here\n\n" : '' ) . "Continue reading: $url\n\nTurn off reminders: " . bk_unsub_url( $user_id );
-
-	$alt = function ( $m ) use ( $text ) {
-		$m->AltBody = $text;
-	};
-	add_action( 'phpmailer_init', $alt );
-	$ok = wp_mail( $user->user_email, $subject, $html, array( 'Content-Type: text/html; charset=UTF-8' ) );
-	remove_action( 'phpmailer_init', $alt );
-	return $ok;
+	$args = bk_reminder_args( $user, $book_id, $last, $done, $total );
+	$subj = $args['feature'] ? 'Pick up where you left off: ' . $args['feature'] : 'Your next section of ' . get_the_title( $book_id ) . ' is waiting';
+	return bk_send_email( $user->user_email, $subj, $args );
 }
 
 /* One-click turn off from the email. */

@@ -81,6 +81,10 @@ function bk_settings_page() {
 		update_option( 'bk_mail', $o, false );
 		bk_pay_settings_save();
 		$msg = 'Settings saved.';
+		if ( ! empty( $_POST['samples'] ) ) {
+			$r   = bk_email_samples();
+			$msg = 'Settings saved. ' . count( array_filter( $r ) ) . ' of 3 sample emails (welcome, reminder, receipt) were sent to ' . get_option( 'admin_email' ) . '.';
+		}
 		if ( ! empty( $_POST['test'] ) ) {
 			$to  = wp_get_current_user()->user_email;
 			$ok  = wp_mail( $to, 'Bookkeeper test email', "This is a test from The Bookkeeper.\n\nIf you can read this, email delivery works." );
@@ -108,6 +112,7 @@ function bk_settings_page() {
 			<p class="submit">
 				<button class="button button-primary" type="submit">Save</button>
 				<button class="button" type="submit" name="test" value="1">Save and send me a test email</button>
+				<button class="button" type="submit" name="samples" value="1">Send sample reader emails to the admin address</button>
 			</p>
 		</form>
 	</div>

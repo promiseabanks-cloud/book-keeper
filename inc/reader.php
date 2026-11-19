@@ -130,7 +130,6 @@ function bk_auth_html( $book ) {
 	<div class="bk-auth-side" <?php echo $cover ? 'style="--cover:url(' . esc_url( $cover ) . ')"' : ''; ?>>
 		<a class="bk-auth-brand" href="<?php echo esc_url( $b['home'] ); ?>"><?php echo $logo; // phpcs:ignore ?></a>
 		<div class="bk-auth-pitch">
-			<p class="bk-auth-kicker">The book and the workbook</p>
 			<h1><?php echo esc_html( get_the_title( $book ) ); ?></h1>
 			<p><?php echo esc_html( get_the_excerpt( $book ) ); ?></p>
 			<ul class="bk-auth-list">

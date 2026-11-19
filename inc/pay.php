@@ -190,12 +190,7 @@ function bk_receipt_email( $order ) {
 	if ( ! $user ) {
 		return;
 	}
-	$title = get_the_title( (int) $order->book_id );
-	$name  = $user->first_name ?: $user->display_name;
-	$paid  = bk_money( $order->amount / 100, $order->currency );
-	$url   = bk_reader_url( (int) $order->book_id );
-	$body  = "Hi $name,\n\nThank you for buying $title. Every chapter is now open to you, along with your journal, highlights and notes.\n\nStart reading: $url\n\nAmount paid: $paid\nReference: {$order->reference}\n\nKeep this email as your receipt.";
-	wp_mail( $user->user_email, 'Your copy of ' . $title . ' is ready', $body );
+	bk_send_email( $user->user_email, 'Your copy of ' . get_the_title( (int) $order->book_id ) . ' is ready', bk_receipt_args( $user, $order ) );
 }
 
 /* Return from Paystack: verify, then land on the reader with a thank-you. */

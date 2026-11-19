@@ -192,7 +192,7 @@
 	function renderToc() {
 		ui.toc.innerHTML = '';
 		ui.toc.appendChild( h( 'div', { class: 'bk-drawer-head' }, [
-			h( 'div', null, [ h( 'p', { class: 'bk-eyebrow', text: 'Contents' } ), h( 'p', { class: 'bk-drawer-title', text: C.title } ) ] ),
+			h( 'div', null, [ h( 'p', { class: 'bk-drawer-title', text: C.title } ) ] ),
 			h( 'button', { class: 'bk-iconbtn', type: 'button', 'aria-label': 'Close', onclick: closeDrawer }, [ icon( 'close' ) ] )
 		] ) );
 		ui.toc.appendChild( h( 'div', { class: 'bk-meter' }, [ h( 'span', { style: 'width:' + pct() + '%' } ), h( 'p', { text: pct() + '% read' } ) ] ) );
@@ -226,7 +226,7 @@
 		ui.me.innerHTML = '';
 		var tabs = [ [ 'marks', 'Highlights' ], [ 'journal', 'Journal' ], [ 'actions', 'Actions' ], [ 'progress', 'Progress' ] ];
 		ui.me.appendChild( h( 'div', { class: 'bk-drawer-head' }, [
-			h( 'div', null, [ h( 'p', { class: 'bk-eyebrow', text: 'Your workspace' } ), h( 'p', { class: 'bk-drawer-title', text: 'My notes' } ) ] ),
+			h( 'div', null, [ h( 'p', { class: 'bk-drawer-title', text: 'My notes' } ) ] ),
 			h( 'button', { class: 'bk-iconbtn', type: 'button', 'aria-label': 'Close', onclick: closeDrawer }, [ icon( 'close' ) ] )
 		] ) );
 		ui.me.appendChild( h( 'div', { class: 'bk-tabs', role: 'tablist' }, tabs.map( function ( t ) {
@@ -338,7 +338,7 @@
 			var p = pct();
 			var mins = Math.round( b.stats.seconds / 60 );
 			var chDone = b.chapters.filter( function ( c ) { return c.sections.every( function ( s, i ) { return isDone( c.id, i ); } ); } ).length;
-			body.appendChild( h( 'div', { class: 'bk-ring', style: '--p:' + p }, [ h( 'strong', { text: p + '%' } ), h( 'span', { text: 'of the book read' } ) ] ) );
+			body.appendChild( h( 'div', { class: 'bk-big' }, [ h( 'strong', { text: p + '%' } ), h( 'span', { text: 'of the book read' } ), h( 'div', { class: 'bk-meter' }, [ h( 'span', { style: 'width:' + p + '%' } ) ] ) ] ) );
 			body.appendChild( h( 'div', { class: 'bk-stats' }, [
 				stat( chDone + '/' + b.chapters.length, 'chapters finished' ),
 				stat( mins < 60 ? mins + ' min' : ( mins / 60 ).toFixed( 1 ) + ' h', 'reading time' ),
@@ -357,7 +357,7 @@
 			] ) );
 		} );
 	}
-	function stat( n, l ) { return h( 'div', { class: 'bk-stat' }, [ h( 'strong', { text: String( n ) } ), h( 'span', { text: l } ) ] ); }
+	function stat( n, l ) { return h( 'div', { class: 'bk-stat' }, [ h( 'span', { text: l.charAt( 0 ).toUpperCase() + l.slice( 1 ) } ), h( 'strong', { text: String( n ) } ) ] ); }
 	function empty( t, s ) { return h( 'div', { class: 'bk-empty' }, [ h( 'p', { class: 'bk-empty-t', text: t } ), h( 'p', { text: s } ) ] ); }
 
 	/* ---------- home ---------- */
@@ -444,7 +444,6 @@
 		if ( S.book.owns ) { location.hash = '#/'; return; }
 		var locked = S.book.chapters.filter( function ( c ) { return c.locked; } );
 		ui.main.appendChild( h( 'section', { class: 'bk-locked' }, [
-			h( 'span', { class: 'bk-locked-i' }, [ icon( 'book' ) ] ),
 			h( 'h1', { text: 'Unlock ' + C.title } ),
 			h( 'p', { class: 'bk-lead', text: 'Get every chapter, plus your journal, highlights, notes and action points, on any device.' } ),
 			h( 'ul', { class: 'bk-locked-list' }, locked.map( function ( c ) { return h( 'li', { text: 'Chapter ' + c.num + ': ' + c.title } ); } ) ),
