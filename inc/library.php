@@ -89,7 +89,7 @@ function bk_ring_svg( $pct, $size ) {
 function bk_account_html( $user, $books ) {
 	$b     = bk_brand();
 	$uid   = $user->ID;
-	$logo  = $b['logo'] ? '<img src="' . esc_url( $b['logo'] ) . '" alt="" width="32" height="32">' : '';
+	$logo  = $b['logo'] ? '<img src="' . esc_url( $b['logo'] ) . '" alt="" width="40" height="40">' : '';
 	$kinds = array(
 		'mark'    => 'Highlight',
 		'reflect' => 'Reflection',
@@ -111,7 +111,7 @@ function bk_account_html( $user, $books ) {
 	?>
 <div class="bk-lib">
 	<header class="bk-lib-bar">
-		<a class="bk-lib-brand" href="<?php echo esc_url( $b['home'] ); ?>"><?php echo $logo; // phpcs:ignore ?><span><?php echo esc_html( $b['name'] ); ?></span></a>
+		<a class="bk-lib-brand" href="<?php echo esc_url( $b['home'] ); ?>"><?php echo $logo ? $logo : '<span>' . esc_html( $b['name'] ) . '</span>'; // phpcs:ignore ?></a>
 		<div class="bk-lib-bar-r">
 			<a class="bk-btn bk-btn--sm" href="<?php echo esc_url( $b['home'] ); ?>"><span class="bk-lib-long">Back to the </span>website</a>
 			<a class="bk-btn bk-btn--sm" href="<?php echo esc_url( wp_logout_url( home_url( '/' ) ) ); ?>">Sign out</a>

@@ -789,7 +789,7 @@ html[data-font="serif"] { --bk-read-font: "Iowan Old Style", "Palatino Linotype"
 .bk-lib { min-height: 100vh; }
 .bk-lib-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px max(24px, env(safe-area-inset-right)) 14px max(24px, env(safe-area-inset-left)); border-bottom: 1px solid var(--bk-line); }
 .bk-lib-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; text-decoration: none; }
-.bk-lib-brand img { width: 32px; height: 32px; object-fit: contain; }
+.bk-lib-brand img { width: 40px; height: 40px; object-fit: contain; display: block; }
 .bk-lib-bar-r { display: flex; gap: 8px; }
 .bk-lib-main { max-width: 980px; margin: 0 auto; padding: 32px 32px 96px; }
 .bk-lib-head h1 { margin: 0; font-size: clamp(24px, 2.6vw, 30px); letter-spacing: -.02em; line-height: 1.15; }

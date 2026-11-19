@@ -40,7 +40,7 @@ add_action( 'init', 'bk_register_types' );
 /** Look and feel per site. Vivere's values are the defaults. */
 function bk_brand() {
 	$d = array(
-		'name'      => 'The Bookkeeper',
+		'name'      => get_bloginfo( 'name' ),
 		'accent'    => '#8D0452',
 		'dark'      => '#3A0222',
 		'paper'     => '#FBF8F4',
